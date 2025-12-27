@@ -67,6 +67,10 @@ For low spreads/liquidity: `EURUSD`, `GBPUSD`, `USDJPY`, `USDCHF`, `USDCAD`, `AU
 2. **Drawdown overlap**: fraction of time pairs are concurrently in drawdown.
 3. **Currency exposure overlap**: count overlapping base/quote exposures (e.g. too much USD risk).
 
+Status:
+- Implemented (basic): `scripts/run_multipair.py` now reports currency exposure, daily return correlation, and drawdown overlap.
+- Planned (advanced): portfolio selection + exposure caps + correlation-minimizing subset selection.
+
 ### Portfolio selection (planned)
 Given a set of passing pair-configs, select a subset that:
 - minimizes correlation / drawdown overlap,

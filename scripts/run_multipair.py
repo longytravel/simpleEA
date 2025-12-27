@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import re
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -27,6 +29,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from config import BACKTEST_FROM, BACKTEST_TO, DEFAULT_SYMBOL, DEFAULT_TIMEFRAME, RUNS_DIR
+from parser.trade_extractor import extract_trades
 from tester.multipair import MultiPairTester, load_params
 
 
@@ -71,6 +74,157 @@ def _pick_params_from_state(state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             with open(p, "r", encoding="utf-8") as f:
                 return json.load(f)
     return None
+
+
+def _extract_date(s: str) -> Optional[str]:
+    if not s:
+        return None
+    m = re.search(r"\b(\d{4}\.\d{2}\.\d{2})\b", s)
+    return m.group(1) if m else None
+
+
+def _daily_net_profit(trades: List[Dict[str, Any]]) -> Dict[str, float]:
+    daily: Dict[str, float] = {}
+    for t in trades:
+        dt = _extract_date(str(t.get("time", "")))
+        if not dt:
+            continue
+        daily[dt] = daily.get(dt, 0.0) + float(t.get("net_profit", 0.0) or 0.0)
+    return daily
+
+
+def _align_daily_series(series_by_symbol: Dict[str, Dict[str, float]]) -> Tuple[List[str], Dict[str, List[float]]]:
+    dates: List[str] = sorted({d for s in series_by_symbol.values() for d in s.keys()})
+    vectors: Dict[str, List[float]] = {}
+    for sym, series in series_by_symbol.items():
+        vectors[sym] = [float(series.get(d, 0.0)) for d in dates]
+    return dates, vectors
+
+
+def _pearson_corr(x: List[float], y: List[float]) -> Optional[float]:
+    if len(x) != len(y) or len(x) < 2:
+        return None
+    n = float(len(x))
+    mx = sum(x) / n
+    my = sum(y) / n
+    sx = sum((xi - mx) ** 2 for xi in x)
+    sy = sum((yi - my) ** 2 for yi in y)
+    if sx <= 0 or sy <= 0:
+        return None
+    cov = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y))
+    return cov / math.sqrt(sx * sy)
+
+
+def _drawdown_flags(daily_pnl: List[float], initial_balance: float) -> List[bool]:
+    equity = float(initial_balance or 0.0)
+    peak = equity
+    flags: List[bool] = []
+    for r in daily_pnl:
+        equity += float(r or 0.0)
+        if equity > peak:
+            peak = equity
+        flags.append(equity < peak)
+    return flags
+
+
+def _dd_overlap_pct(a: List[bool], b: List[bool]) -> Optional[float]:
+    if len(a) != len(b) or not a:
+        return None
+    both = sum(1 for x, y in zip(a, b) if x and y)
+    return (both / len(a)) * 100.0
+
+
+def _currency_exposure(symbols: List[str]) -> Dict[str, int]:
+    exposure: Dict[str, int] = {}
+    for sym in symbols:
+        s = (sym or "").upper().strip()
+        if len(s) < 6:
+            continue
+        base = s[:3]
+        quote = s[-3:]
+        exposure[base] = exposure.get(base, 0) + 1
+        exposure[quote] = exposure.get(quote, 0) + 1
+    return dict(sorted(exposure.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def _compute_concentration_analysis(results: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Compute basic concentration-risk diagnostics from multi-pair reports:
+    - Daily return correlation (based on per-day net profit)
+    - Drawdown overlap (percent of days both are in drawdown)
+    - Currency exposure counts
+    """
+    series_by_symbol: Dict[str, Dict[str, float]] = {}
+    initial_by_symbol: Dict[str, float] = {}
+    skipped: Dict[str, str] = {}
+
+    for sym, r in (results or {}).items():
+        if not isinstance(r, dict) or not r.get("success"):
+            continue
+        report_path = r.get("report_path")
+        if not report_path:
+            skipped[sym] = "missing report_path"
+            continue
+
+        extraction = extract_trades(str(report_path))
+        if not extraction.success:
+            skipped[sym] = extraction.error or "trade extraction failed"
+            continue
+        trades = [t.to_dict() for t in extraction.trades] if extraction.trades else []
+        if not trades:
+            skipped[sym] = "no trades extracted"
+            continue
+
+        series_by_symbol[sym] = _daily_net_profit(trades)
+        initial = float(extraction.initial_balance or r.get("initial_deposit") or 0.0)
+        initial_by_symbol[sym] = initial
+
+    if not series_by_symbol:
+        return {"success": False, "error": "No per-trade series available for correlation/overlap analysis", "skipped": skipped}
+
+    dates, vectors = _align_daily_series(series_by_symbol)
+    syms = sorted(vectors.keys())
+
+    corr_matrix: List[List[Optional[float]]] = []
+    dd_overlap_matrix: List[List[Optional[float]]] = []
+
+    dd_flags: Dict[str, List[bool]] = {s: _drawdown_flags(vectors[s], initial_by_symbol.get(s, 0.0)) for s in syms}
+
+    for i, a in enumerate(syms):
+        row_corr: List[Optional[float]] = []
+        row_dd: List[Optional[float]] = []
+        for j, b in enumerate(syms):
+            if i == j:
+                row_corr.append(1.0)
+                row_dd.append(100.0)
+            else:
+                row_corr.append(_pearson_corr(vectors[a], vectors[b]))
+                row_dd.append(_dd_overlap_pct(dd_flags[a], dd_flags[b]))
+        corr_matrix.append(row_corr)
+        dd_overlap_matrix.append(row_dd)
+
+    # Aggregate drawdown concurrency
+    dd_counts = [sum(1 for s in syms if dd_flags[s][k]) for k in range(len(dates))] if dates else []
+    avg_dd = (sum(dd_counts) / len(dd_counts)) if dd_counts else 0.0
+    max_dd = max(dd_counts) if dd_counts else 0
+    pct_ge_2 = (sum(1 for c in dd_counts if c >= 2) / len(dd_counts) * 100.0) if dd_counts else 0.0
+    pct_ge_3 = (sum(1 for c in dd_counts if c >= 3) / len(dd_counts) * 100.0) if dd_counts else 0.0
+
+    return {
+        "success": True,
+        "pairs": syms,
+        "dates_count": len(dates),
+        "currency_exposure": _currency_exposure(syms),
+        "correlation": {"pairs": syms, "matrix": corr_matrix},
+        "drawdown_overlap": {"pairs": syms, "matrix": dd_overlap_matrix},
+        "drawdown_concurrency": {
+            "avg_pairs_in_drawdown": avg_dd,
+            "max_pairs_in_drawdown": max_dd,
+            "pct_days_ge_2_in_drawdown": pct_ge_2,
+            "pct_days_ge_3_in_drawdown": pct_ge_3,
+        },
+        "skipped": skipped,
+    }
 
 
 def _render_html(data: Dict[str, Any]) -> str:
@@ -126,6 +280,11 @@ def _render_html(data: Dict[str, Any]) -> str:
     a {{ color: var(--accent); text-decoration: none; }}
     a:hover {{ text-decoration: underline; }}
     .scroll {{ max-height: 520px; overflow:auto; border: 1px solid var(--border); border-radius: 12px; }}
+    .matrix {{ width: auto; }}
+    .matrix th, .matrix td {{ text-align: center; white-space: nowrap; }}
+    .matrix th:first-child, .matrix td:first-child {{ text-align: left; }}
+    .legend {{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }}
+    .swatch {{ width:14px; height:14px; border-radius:4px; border: 1px solid var(--border); display:inline-block; }}
   </style>
 </head>
 <body>
@@ -141,7 +300,7 @@ def _render_html(data: Dict[str, Any]) -> str:
         </div>
       </div>
       <div class="subtitle" style="max-width:520px">
-        Notes: This module reuses one parameter set across pairs. Don’t expect all pairs to work; use this to discover additional pairs and to assess concentration risk (correlation/drawdown overlap planned).
+        Notes: This module reuses one parameter set across pairs. Don’t expect all pairs to work; use this to discover additional pairs and to assess concentration risk (currency exposure, return correlation, drawdown overlap).
       </div>
     </div>
 
@@ -185,6 +344,11 @@ def _render_html(data: Dict[str, Any]) -> str:
       </div>
       <div class="subtitle" id="tableStats"></div>
       <div id="table"></div>
+    </div>
+
+    <div class="card">
+      <div class="subtitle">Concentration Risk (Correlation / Drawdown Overlap)</div>
+      <div id="analysis"></div>
     </div>
   </div>
 
@@ -337,6 +501,124 @@ def _render_html(data: Dict[str, Any]) -> str:
       return v === null ? '-' : fmt(v, 2);
     }}
 
+    function corrColor(v) {{
+      if (v === null || v === undefined) return 'transparent';
+      const x = Math.max(-1, Math.min(1, Number(v)));
+      const a = Math.abs(x);
+      const alpha = 0.08 + 0.55 * a;
+      // blue for negative, red for positive
+      if (x < 0) return `rgba(106,166,255,${{alpha}})`;
+      return `rgba(255,107,107,${{alpha}})`;
+    }}
+
+    function overlapColor(v) {{
+      if (v === null || v === undefined) return 'transparent';
+      const x = Math.max(0, Math.min(100, Number(v)));
+      const t = x / 100.0; // 0 good, 1 bad
+      const r = Math.round(61 + (255 - 61) * t);
+      const g = Math.round(220 + (107 - 220) * t);
+      const b = Math.round(151 + (107 - 151) * t);
+      const alpha = 0.08 + 0.55 * t;
+      return `rgba(${{r}},${{g}},${{b}},${{alpha}})`;
+    }}
+
+    function renderMatrix(pairs, matrix, opts) {{
+      const title = opts.title || '';
+      const formatter = opts.formatter || ((v)=> v===null ? '-' : String(v));
+      const colorFn = opts.colorFn || (()=>'transparent');
+
+      if (!pairs || !matrix || pairs.length === 0) {{
+        return `<div class=\"subtitle\">No ${{escapeHtml(title)}} data.</div>`;
+      }}
+
+      let html = `<div class=\"subtitle\" style=\"margin-top:12px\">${{escapeHtml(title)}}</div>`;
+      if (opts.legendHtml) html += opts.legendHtml;
+      html += '<div class=\"scroll\" style=\"max-height:360px\"><table class=\"matrix\"><thead><tr><th></th>';
+      for (const p of pairs) html += `<th>${{escapeHtml(p)}}</th>`;
+      html += '</tr></thead><tbody>';
+      for (let i=0; i<pairs.length; i++) {{
+        html += `<tr><td>${{escapeHtml(pairs[i])}}</td>`;
+        for (let j=0; j<pairs.length; j++) {{
+          const v = (matrix[i] || [])[j] ?? null;
+          const bg = colorFn(v);
+          const txt = formatter(v);
+          const tip = (v === null || v === undefined) ? 'n/a' : String(v);
+          html += `<td title=\"${{escapeHtml(tip)}}\" style=\"background:${{bg}}\">${{escapeHtml(txt)}}</td>`;
+        }}
+        html += '</tr>';
+      }}
+      html += '</tbody></table></div>';
+      return html;
+    }}
+
+    function renderAnalysis() {{
+      const root = document.getElementById('analysis');
+      const a = DATA.analysis || {{}};
+      if (!a.success) {{
+        const err = a.error ? ` (${{escapeHtml(a.error)}})` : '';
+        root.innerHTML = `<div class=\"subtitle\">No analysis available${{err}}.</div>`;
+        return;
+      }}
+
+      let html = '';
+
+      // Exposure
+      const exp = a.currency_exposure || {{}};
+      html += '<div class=\"subtitle\" style=\"margin-top:6px\">Currency Exposure</div>';
+      html += '<div class=\"legend\" style=\"margin-top:6px\">';
+      for (const k of Object.keys(exp)) {{
+        html += `<span class=\"tag\" title=\"Number of tested pairs containing this currency\">${{escapeHtml(k)}}: ${{escapeHtml(exp[k])}}</span>`;
+      }}
+      html += '</div>';
+
+      const conc = a.drawdown_concurrency || {{}};
+      html += '<div class=\"subtitle\" style=\"margin-top:12px\">Drawdown Concurrency</div>';
+      html += '<div class=\"legend\" style=\"margin-top:6px\">' +
+        `<span class=\"tag\" title=\"Average number of pairs in drawdown on a day\">Avg in DD: ${{fmt(conc.avg_pairs_in_drawdown,2)}}</span>` +
+        `<span class=\"tag\" title=\"Worst day: max pairs simultaneously in drawdown\">Max in DD: ${{escapeHtml(conc.max_pairs_in_drawdown ?? '-')}}</span>` +
+        `<span class=\"tag\" title=\"Percent of days where at least 2 pairs were in drawdown\">Days ≥2 in DD: ${{fmt(conc.pct_days_ge_2_in_drawdown,1)}}%</span>` +
+        `<span class=\"tag\" title=\"Percent of days where at least 3 pairs were in drawdown\">Days ≥3 in DD: ${{fmt(conc.pct_days_ge_3_in_drawdown,1)}}%</span>` +
+        '</div>';
+
+      const pairs = (a.correlation || {{}}).pairs || [];
+      const corr = (a.correlation || {{}}).matrix || [];
+      const dd = (a.drawdown_overlap || {{}}).matrix || [];
+
+      html += renderMatrix(pairs, corr, {{
+        title: 'Daily Return Correlation (Net Profit per day)',
+        formatter: (v) => v===null ? '-' : fmt(v,2),
+        colorFn: corrColor,
+        legendHtml: '<div class=\"legend\" style=\"margin-top:6px\">' +
+          '<span class=\"swatch\" style=\"background: rgba(106,166,255,0.45)\"></span><span class=\"subtitle\">negative</span>' +
+          '<span class=\"swatch\" style=\"background: rgba(255,107,107,0.45)\"></span><span class=\"subtitle\">positive</span>' +
+          '<span class=\"subtitle\">(zeros on no-trade days)</span>' +
+          '</div>',
+      }});
+
+      html += renderMatrix(pairs, dd, {{
+        title: 'Drawdown Overlap (% of days both in drawdown)',
+        formatter: (v) => v===null ? '-' : fmt(v,1),
+        colorFn: overlapColor,
+        legendHtml: '<div class=\"legend\" style=\"margin-top:6px\">' +
+          '<span class=\"swatch\" style=\"background: rgba(61,220,151,0.45)\"></span><span class=\"subtitle\">low overlap</span>' +
+          '<span class=\"swatch\" style=\"background: rgba(255,107,107,0.45)\"></span><span class=\"subtitle\">high overlap</span>' +
+          '</div>',
+      }});
+
+      const skipped = a.skipped || {{}};
+      const skippedKeys = Object.keys(skipped);
+      if (skippedKeys.length) {{
+        html += '<div class=\"subtitle\" style=\"margin-top:12px\">Skipped</div>';
+        html += '<div class=\"legend\" style=\"margin-top:6px\">';
+        for (const k of skippedKeys) {{
+          html += `<span class=\"tag\" title=\"${{escapeHtml(skipped[k])}}\">${{escapeHtml(k)}}</span>`;
+        }}
+        html += '</div>';
+      }}
+
+      root.innerHTML = html;
+    }}
+
     function render() {{
       const allRows = buildRows();
       const rows = sortRows(applyFilters(allRows));
@@ -394,6 +676,7 @@ def _render_html(data: Dict[str, Any]) -> str:
     }});
 
     render();
+    renderAnalysis();
   </script>
 </body>
 </html>
@@ -496,6 +779,7 @@ def main() -> None:
         "summary": res.to_dict().get("summary", {}),
         "results": results,
     }
+    data["analysis"] = _compute_concentration_analysis(results)
 
     (out_dir / "data.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
     index_path = out_dir / "index.html"
@@ -525,4 +809,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
