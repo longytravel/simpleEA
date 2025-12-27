@@ -79,6 +79,11 @@ Given a set of passing pair-configs, select a subset that:
 We should not rely on a specific runtime (Codex vs Claude).
 Instead, make it **file-based** and **schema-driven**.
 
+### Claude/Codex integration (planned)
+- Claude: can use existing `.claude/agents/strategy-improver.md` plus `mql5-lookup` / `mql5-fixer` to draft safe changes.
+- Codex: can run the same flow directly via Python orchestration scripts.
+- **Key rule:** regardless of LLM, the output should be a structured change plan (JSON) so the application step is deterministic and auditable.
+
 ### Inputs the LLM reads (already available)
 - `runs/dashboards/.../data.json` (all metrics + splits + MC)
 - `runs/{EA}_REPORT.txt` (human summary)
@@ -116,4 +121,3 @@ Planned approach:
 
 Cloud is already configurable in optimization INI.
 Planned: make “cloud on/off” a first-class user option in the post-step menu (e.g. overnight local runs).
-
