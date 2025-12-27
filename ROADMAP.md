@@ -77,6 +77,10 @@ Given a set of passing pair-configs, select a subset that:
 - respects exposure caps (e.g. max N pairs sharing USD),
 - maximizes expected return at acceptable risk.
 
+Status:
+- Implemented (basic): `scripts/run_multipair.py` includes a heuristic “Portfolio Suggestions” section based on per-pair performance + correlation + drawdown overlap.
+- Planned (advanced): portfolio selection across *per-pair optimized configs* with exposure caps + correlation-minimizing subset selection.
+
 ---
 
 ## LLM Improvement Loop (Model-Agnostic Design)

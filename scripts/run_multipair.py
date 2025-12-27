@@ -123,7 +123,9 @@ def _drawdown_flags(daily_pnl: List[float], initial_balance: float) -> List[bool
         equity += float(r or 0.0)
         if equity > peak:
             peak = equity
-        flags.append(equity < peak)
+        dd = peak - equity
+        dd_pct = (dd / peak) * 100.0 if peak > 0 else 0.0
+        flags.append(dd_pct >= 1.0)  # ignore tiny dips; focus on meaningful drawdowns
     return flags
 
 
@@ -145,6 +147,125 @@ def _currency_exposure(symbols: List[str]) -> Dict[str, int]:
         exposure[base] = exposure.get(base, 0) + 1
         exposure[quote] = exposure.get(quote, 0) + 1
     return dict(sorted(exposure.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def _pair_score(r: Dict[str, Any]) -> float:
+    """
+    Heuristic per-pair score for portfolio selection.
+    Uses ROI% (normalized), PF, DD%, and trades. Higher is better.
+    """
+    if not isinstance(r, dict) or not r.get("success"):
+        return float("-inf")
+    roi = float(r.get("roi_pct") or 0.0)
+    pf = float(r.get("profit_factor") or 0.0)
+    dd = float(r.get("max_drawdown_pct") or 0.0)
+    trades = float(r.get("total_trades") or 0.0)
+
+    if roi <= 0 or pf <= 1.0 or trades <= 0:
+        return float("-inf")
+
+    pf_cap = min(max(pf, 0.0), 3.0)
+    dd_factor = max(0.0, 1.0 - (dd / 30.0))  # 0 at 30% DD
+    trade_factor = min(1.0, math.sqrt(trades / 200.0))  # saturates around ~200 trades
+    return roi * pf_cap * dd_factor * trade_factor
+
+
+def _build_lookup(pairs: List[str], matrix: List[List[Optional[float]]]) -> Dict[Tuple[str, str], Optional[float]]:
+    idx = {p: i for i, p in enumerate(pairs)}
+    out: Dict[Tuple[str, str], Optional[float]] = {}
+    for a in pairs:
+        for b in pairs:
+            ia = idx.get(a)
+            ib = idx.get(b)
+            if ia is None or ib is None:
+                out[(a, b)] = None
+                continue
+            out[(a, b)] = matrix[ia][ib] if ia < len(matrix) and ib < len(matrix[ia]) else None
+    return out
+
+
+def _suggest_portfolios(results: Dict[str, Any], analysis: Dict[str, Any], *, max_size: int = 4) -> Dict[str, Any]:
+    """
+    Recommend a subset of pairs that balances performance vs concentration risk.
+
+    This is intentionally heuristic and transparent:
+    - Candidate pairs must be profitable (ROI>0, PF>1) and have trades.
+    - Portfolio objective = sum(pair_scores) * (1 - 0.5*maxAbsCorr - 0.5*maxDDOverlap)
+    """
+    if not analysis.get("success"):
+        return {"success": False, "error": "analysis not available"}
+
+    pairs = analysis.get("pairs") or []
+    corr = (analysis.get("correlation") or {}).get("matrix") or []
+    dd = (analysis.get("drawdown_overlap") or {}).get("matrix") or []
+    if not pairs or not corr or not dd:
+        return {"success": False, "error": "missing correlation/overlap matrices"}
+
+    corr_lu = _build_lookup(pairs, corr)
+    dd_lu = _build_lookup(pairs, dd)
+
+    candidates: List[str] = []
+    scores: Dict[str, float] = {}
+    for sym in pairs:
+        s = _pair_score(results.get(sym, {}))
+        if s == float("-inf"):
+            continue
+        candidates.append(sym)
+        scores[sym] = s
+
+    if not candidates:
+        return {"success": False, "error": "no profitable candidates for portfolio selection"}
+
+    candidates = sorted(candidates, key=lambda x: scores.get(x, float("-inf")), reverse=True)
+    kmax = min(int(max_size), len(candidates))
+
+    def combo_stats(combo: Tuple[str, ...]) -> Dict[str, Any]:
+        sum_score = sum(scores[p] for p in combo)
+        max_abs_corr = 0.0
+        max_dd_overlap = 0.0
+        for i in range(len(combo)):
+            for j in range(i + 1, len(combo)):
+                a, b = combo[i], combo[j]
+                c = corr_lu.get((a, b))
+                o = dd_lu.get((a, b))
+                if c is not None:
+                    max_abs_corr = max(max_abs_corr, abs(float(c)))
+                if o is not None:
+                    max_dd_overlap = max(max_dd_overlap, float(o) / 100.0)
+        objective = sum_score * max(0.0, 1.0 - 0.5 * max_abs_corr - 0.5 * max_dd_overlap)
+        return {
+            "pairs": list(combo),
+            "sum_score": sum_score,
+            "objective": objective,
+            "max_abs_corr": max_abs_corr,
+            "max_dd_overlap_pct": max_dd_overlap * 100.0,
+            "currency_exposure": _currency_exposure(list(combo)),
+        }
+
+    # brute-force combinations up to size kmax (small N for default basket; still fast)
+    import itertools
+
+    recommendations: List[Dict[str, Any]] = []
+    for k in range(1, kmax + 1):
+        best: Optional[Dict[str, Any]] = None
+        for combo in itertools.combinations(candidates, k):
+            st = combo_stats(combo)
+            if best is None or st["objective"] > best["objective"]:
+                best = st
+        if best is not None:
+            best["size"] = k
+            recommendations.append(best)
+
+    return {
+        "success": True,
+        "candidates": candidates,
+        "pair_scores": {k: scores[k] for k in candidates},
+        "constraints": {
+            "dd_flag_threshold_pct": 1.0,
+            "objective_formula": "sum(pair_scores) * (1 - 0.5*maxAbsCorr - 0.5*maxDDOverlap)",
+        },
+        "recommendations": recommendations,
+    }
 
 
 def _compute_concentration_analysis(results: Dict[str, Any]) -> Dict[str, Any]:
@@ -189,6 +310,7 @@ def _compute_concentration_analysis(results: Dict[str, Any]) -> Dict[str, Any]:
     dd_overlap_matrix: List[List[Optional[float]]] = []
 
     dd_flags: Dict[str, List[bool]] = {s: _drawdown_flags(vectors[s], initial_by_symbol.get(s, 0.0)) for s in syms}
+    dd_freq: Dict[str, float] = {s: (sum(1 for f in dd_flags[s] if f) / len(dd_flags[s]) * 100.0) if dd_flags[s] else 0.0 for s in syms}
 
     for i, a in enumerate(syms):
         row_corr: List[Optional[float]] = []
@@ -196,7 +318,7 @@ def _compute_concentration_analysis(results: Dict[str, Any]) -> Dict[str, Any]:
         for j, b in enumerate(syms):
             if i == j:
                 row_corr.append(1.0)
-                row_dd.append(100.0)
+                row_dd.append(dd_freq.get(a, 0.0))
             else:
                 row_corr.append(_pearson_corr(vectors[a], vectors[b]))
                 row_dd.append(_dd_overlap_pct(dd_flags[a], dd_flags[b]))
@@ -210,13 +332,15 @@ def _compute_concentration_analysis(results: Dict[str, Any]) -> Dict[str, Any]:
     pct_ge_2 = (sum(1 for c in dd_counts if c >= 2) / len(dd_counts) * 100.0) if dd_counts else 0.0
     pct_ge_3 = (sum(1 for c in dd_counts if c >= 3) / len(dd_counts) * 100.0) if dd_counts else 0.0
 
-    return {
+    analysis = {
         "success": True,
         "pairs": syms,
         "dates_count": len(dates),
         "currency_exposure": _currency_exposure(syms),
         "correlation": {"pairs": syms, "matrix": corr_matrix},
         "drawdown_overlap": {"pairs": syms, "matrix": dd_overlap_matrix},
+        "drawdown_flags_threshold_pct": 1.0,
+        "drawdown_frequency_pct": dd_freq,
         "drawdown_concurrency": {
             "avg_pairs_in_drawdown": avg_dd,
             "max_pairs_in_drawdown": max_dd,
@@ -225,6 +349,8 @@ def _compute_concentration_analysis(results: Dict[str, Any]) -> Dict[str, Any]:
         },
         "skipped": skipped,
     }
+    analysis["portfolio"] = _suggest_portfolios(results, analysis, max_size=4)
+    return analysis
 
 
 def _render_html(data: Dict[str, Any]) -> str:
@@ -578,7 +704,46 @@ def _render_html(data: Dict[str, Any]) -> str:
         `<span class=\"tag\" title=\"Worst day: max pairs simultaneously in drawdown\">Max in DD: ${{escapeHtml(conc.max_pairs_in_drawdown ?? '-')}}</span>` +
         `<span class=\"tag\" title=\"Percent of days where at least 2 pairs were in drawdown\">Days ≥2 in DD: ${{fmt(conc.pct_days_ge_2_in_drawdown,1)}}%</span>` +
         `<span class=\"tag\" title=\"Percent of days where at least 3 pairs were in drawdown\">Days ≥3 in DD: ${{fmt(conc.pct_days_ge_3_in_drawdown,1)}}%</span>` +
+        `<span class=\"tag\" title=\"Drawdown flag threshold used for overlap/concurrency\">DD flag: ≥${{fmt(a.drawdown_flags_threshold_pct ?? 1.0, 1)}}%</span>` +
         '</div>';
+
+      // Portfolio suggestions (heuristic; see ROADMAP.md for improvements)
+      function exposureText(exp) {{
+        const e = exp || {{}};
+        const ks = Object.keys(e).sort((a,b) => (e[b] - e[a]) || a.localeCompare(b));
+        return ks.map(k => `${{k}}:${{e[k]}}`).join(' ');
+      }}
+
+      const port = a.portfolio || {{}};
+      if (port.success && (port.recommendations || []).length) {{
+        html += '<div class=\"subtitle\" style=\"margin-top:12px\">Portfolio Suggestions</div>';
+        html += `<div class=\"subtitle\" style=\"margin-top:6px\">Objective: <span class=\"tag\">${{escapeHtml(port.constraints?.objective_formula ?? '')}}</span></div>`;
+        html += '<div class=\"scroll\" style=\"max-height:240px\"><table><thead><tr>' +
+          '<th title=\"Number of pairs in this suggested portfolio\">Size</th>' +
+          '<th title=\"Suggested pairs\">Pairs</th>' +
+          '<th title=\"Portfolio objective score (higher is better)\">Objective</th>' +
+          '<th title=\"Sum of per-pair scores (before concentration penalty)\">SumScore</th>' +
+          '<th title=\"Maximum absolute correlation between any two pairs in the set (lower is better)\">Max |Corr|</th>' +
+          '<th title=\"Maximum drawdown-overlap between any two pairs in the set (lower is better)\">Max DD Overlap%</th>' +
+          '<th title=\"Currency exposure counts across selected pairs\">Exposure</th>' +
+          '</tr></thead><tbody>';
+        for (const rec of port.recommendations) {{
+          const ps = (rec.pairs || []).map(p => `<span class=\"tag\">${{escapeHtml(p)}}</span>`).join(' ');
+          html += '<tr>' +
+            `<td>${{escapeHtml(rec.size ?? '-')}}</td>` +
+            `<td>${{ps}}</td>` +
+            `<td>${{fmt(rec.objective, 2)}}</td>` +
+            `<td>${{fmt(rec.sum_score, 2)}}</td>` +
+            `<td>${{fmt(rec.max_abs_corr, 2)}}</td>` +
+            `<td>${{fmt(rec.max_dd_overlap_pct, 1)}}</td>` +
+            `<td>${{escapeHtml(exposureText(rec.currency_exposure))}}</td>` +
+            '</tr>';
+        }}
+        html += '</tbody></table></div>';
+      }} else {{
+        html += '<div class=\"subtitle\" style=\"margin-top:12px\">Portfolio Suggestions</div>';
+        html += '<div class=\"subtitle\" style=\"margin-top:6px\">No profitable portfolio candidates found in this run.</div>';
+      }}
 
       const pairs = (a.correlation || {{}}).pairs || [];
       const corr = (a.correlation || {{}}).matrix || [];
@@ -596,7 +761,7 @@ def _render_html(data: Dict[str, Any]) -> str:
       }});
 
       html += renderMatrix(pairs, dd, {{
-        title: 'Drawdown Overlap (% of days both in drawdown)',
+        title: `Drawdown Overlap (% of days both in drawdown, DD≥${{fmt(a.drawdown_flags_threshold_pct ?? 1.0, 1)}}%)`,
         formatter: (v) => v===null ? '-' : fmt(v,1),
         colorFn: overlapColor,
         legendHtml: '<div class=\"legend\" style=\"margin-top:6px\">' +
