@@ -1,0 +1,2218 @@
+=== Trade Functions (Pages 2251-2356) ===
+
+--- Page 2251 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2251
+Trade Functions
+This is the group of functions intended for managing trading activities.
+Before you proceed to study the trade functions of the platform, you must have a clear understanding
+of the basic terms: order, deal and position:
+· An order is an instruction given to a broker to buy or sell a financial instrument. There are two main
+types of orders: Market and Pending. In addition, there are special Take Profit and Stop Loss levels.
+· A deal is the commercial exchange (buying or selling) of a financial security. Buying is executed at
+the demand price (Ask), and Sell is performed at the supply price (Bid). A deal can be opened as a
+result of market order execution or pending order triggering. Note that in some cases, execution of
+an order can result in several deals.
+· A position is a trade obligation, i.e. the number of bought or sold contracts of a financial
+instrument. A long position is financial security bought expecting the security price go higher. A
+short position is an obligation to supply a security expecting the price will fall in future.
+General information about trading operations is available in the client terminal help.
+Trading functions can be used in Expert Advisors and scripts. Trading functions can be called only if in
+the properties of the Expert Advisor or script the "Allow live trading" checkbox is enabled.
+Trading can be allowed or prohibited depending on various factors described in the Trade Permission
+section.
+Function
+Action
+OrderCalcMargin
+Calculates the margin required for the specified order type, in the
+deposit currency
+OrderCalcProfit
+Calculates the profit based on the parameters passed, in the deposit
+currency
+OrderCheck
+Checks if there are enough funds to execute the required trade
+operation.
+OrderSend
+Sends trade requests to a server
+OrderSendAsync
+Asynchronously sends trade requests without waiting for the trade
+response of the trade server
+PositionsTotal
+Returns the number of open positions
+PositionGetSymbol
+Returns the symbol corresponding to the open position
+PositionSelect
+Chooses an open position for further working with it
+PositionSelectByTicket
+Selects a position to work with by the ticket number specified in it
+PositionGetDouble
+Returns the requested property of an open position (double)
+PositionGetInteger
+Returns the requested property of an open position (datetime or int)
+PositionGetString
+Returns the requested property of an open position (string)
+
+
+--- Page 2252 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2252
+Function
+Action
+PositionGetTicket
+Returns the ticket of the position with the specified index in the list
+of open positions
+OrdersTotal
+Returns the number of orders
+OrderGetTicket
+Return the ticket of a corresponding order
+OrderSelect
+Selects a order for further working with it
+OrderGetDouble
+Returns the requested property of the order (double)
+OrderGetInteger
+Returns the requested property of the order (datetime or int)
+OrderGetString
+Returns the requested property of the order (string)
+HistorySelect
+Retrieves the history of transactions and orders for the specified
+period of the server time
+HistorySelectByPosition
+Requests the history of deals with a specified position identifier.
+HistoryOrderSelect
+Selects an order in the history for further working with it
+HistoryOrdersTotal
+Returns the number of orders in the history
+HistoryOrderGetTicket
+Return order ticket of a corresponding order in the history 
+HistoryOrderGetDouble
+Returns the requested property of an order in the history (double)
+HistoryOrderGetInteger
+Returns the requested property of an order in the history (datetime
+or int)
+HistoryOrderGetString
+Returns the requested property of an order in the history (string)
+HistoryDealSelect
+Selects a deal in the history for further calling it through appropriate
+functions
+HistoryDealsTotal
+Returns the number of deals in the history
+HistoryDealGetTicket
+Returns a ticket of a corresponding deal in the history
+HistoryDealGetDouble
+Returns the requested property of a deal in the history (double)
+HistoryDealGetInteger
+Returns the requested property of a deal in the history (datetime or
+int)
+HistoryDealGetString
+Returns the requested property of a deal in the history (string)
+
+
+--- Page 2253 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2253
+OrderCalcMargin
+The function calculates the margin required for the specified order type, on the current account, in the
+current market environment not taking into account current pending orders and open positions. It
+allows the evaluation of margin for the trade operation planned. The value is returned in the account
+currency.
+bool  OrderCalcMargin(
+   ENUM_ORDER_TYPE       action,           // type of order
+   string                symbol,           // symbol name
+   double                volume,           // volume
+   double                price,            // open price
+   double&               margin            // variable for obtaining the margin value
+   );
+Parameters
+action
+[in]  The order type, can be one of the values of the ENUM_ORDER_TYPE enumeration. 
+symbol
+[in]  Symbol name.
+volume
+[in]  Volume of the trade operation.
+price
+[in]  Open price.
+margin
+[out]  The variable, to which the value of the required margin will be written in case the function
+is successfully executed. The calculation is performed as if there were no pending orders and open
+positions on the current account. The margin value depends on many factors, and can differ in
+different market environments.
+Return Value
+The function returns true in case of success; otherwise it returns false. In order to obtain
+information about the error, call the GetLastError() function.
+Example:
+#define   VOLUME     1.0   // order volume
+#define   DEVIATION  100   // distance for setting a pending order
+#define   STOP_LIMIT 50    // order StopLimit distance
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   string currency=AccountInfoString(ACCOUNT_CURRENCY);
+
+
+--- Page 2254 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2254
+   int array_types[8]={ORDER_TYPE_BUY,
+                       ORDER_TYPE_SELL,
+                       ORDER_TYPE_BUY_LIMIT,
+                       ORDER_TYPE_SELL_LIMIT,
+                       ORDER_TYPE_BUY_STOP,
+                       ORDER_TYPE_SELL_STOP,
+                       ORDER_TYPE_BUY_STOP_LIMIT,
+                       ORDER_TYPE_SELL_STOP_LIMIT };
+                       
+//--- in a loop by the order type array
+   for(int i=0; i<(int)array_types.Size(); i++)
+     {
+      //--- depending on the order type, get ORDER_TYPE_BUY or ORDER_TYPE_SELL type
+      ENUM_ORDER_TYPE type=MarketOrderByOrderType((ENUM_ORDER_TYPE)array_types[i]);
+      
+      //--- depending on the order type, get the price
+      double price=PriceByOrderType(_Symbol, type);
+      
+      //--- get the amount of margin required for the order type specified in 'action'
+      double margin=EMPTY_VALUE;
+      ResetLastError();
+      if(!OrderCalcMargin(type, _Symbol, VOLUME, price, margin))
+        {
+         Print("OrderCalcMargin() failed. Error ",GetLastError());
+         continue;
+        }
+      //--- print the result in the journal
+      PrintFormat("Margin required for %.2f %s order at price %.*f on %s symbol: %.2f 
+     }
+   /*
+   result:
+   Margin required for 1.00 Buy order at price 1.31668 on GBPUSD symbol: 1316.68 USD
+   Margin required for 1.00 Sell order at price 1.31661 on GBPUSD symbol: 1316.61 USD
+   Margin required for 1.00 Buy Limit order at price 1.31568 on GBPUSD symbol: 1315.68
+   Margin required for 1.00 Sell Limit order at price 1.31761 on GBPUSD symbol: 1317.6
+   Margin required for 1.00 Buy Stop order at price 1.31768 on GBPUSD symbol: 1317.68 
+   Margin required for 1.00 Sell Stop order at price 1.31561 on GBPUSD symbol: 1315.61
+   Margin required for 1.00 Buy Stop Limit order at price 1.31718 on GBPUSD symbol: 13
+   Margin required for 1.00 Sell Stop Limit order at price 1.31611 on GBPUSD symbol: 1
+   */
+  }
+//+------------------------------------------------------------------+
+//| Return the Buy or Sell order type                                |
+//+------------------------------------------------------------------+
+ENUM_ORDER_TYPE MarketOrderByOrderType(ENUM_ORDER_TYPE type)
+  {
+   switch(type)
+     {
+      case ORDER_TYPE_BUY  : case ORDER_TYPE_BUY_LIMIT  : case ORDER_TYPE_BUY_STOP  : 
+
+
+--- Page 2255 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2255
+        return(ORDER_TYPE_BUY);
+      case ORDER_TYPE_SELL : case ORDER_TYPE_SELL_LIMIT : case ORDER_TYPE_SELL_STOP : 
+        return(ORDER_TYPE_SELL);
+     }
+   return(WRONG_VALUE);
+  }
+//+------------------------------------------------------------------+
+//| Return open price by order type                                  |
+//+------------------------------------------------------------------+
+double PriceByOrderType(const string symbol, const ENUM_ORDER_TYPE order_type)
+  {
+   int     digits=0;
+   double  point=0;
+   MqlTick tick={};
+//--- get the symbol Point value
+   ResetLastError();
+   if(!SymbolInfoDouble(symbol, SYMBOL_POINT, point))
+     {
+      Print("SymbolInfoDouble() failed. Error ", GetLastError());
+      return 0;
+     }
+     
+//--- get the symbol Digits value
+   long value=0;
+   if(!SymbolInfoInteger(symbol, SYMBOL_DIGITS, value))
+     {
+      Print("SymbolInfoInteger() failed. Error ", GetLastError());
+      return 0;
+     }
+   digits=(int)value;
+   
+//--- get the last prices by symbol
+   if(!SymbolInfoTick(symbol, tick))
+     {
+      Print("SymbolInfoTick() failed. Error ", GetLastError());
+      return 0;
+     }
+     
+//--- return the price depending on the order type
+   switch(order_type)
+     {
+      case ORDER_TYPE_BUY              :  return(tick.ask);
+      case ORDER_TYPE_SELL             :  return(tick.bid);
+      case ORDER_TYPE_BUY_LIMIT        :  return(NormalizeDouble(tick.ask - DEVIATION 
+      case ORDER_TYPE_SELL_LIMIT       :  return(NormalizeDouble(tick.bid + DEVIATION 
+      case ORDER_TYPE_BUY_STOP         :  return(NormalizeDouble(tick.ask + DEVIATION 
+      case ORDER_TYPE_SELL_STOP        :  return(NormalizeDouble(tick.bid - DEVIATION 
+      case ORDER_TYPE_BUY_STOP_LIMIT   :  return(NormalizeDouble(tick.ask + DEVIATION 
+
+
+--- Page 2256 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2256
+      case ORDER_TYPE_SELL_STOP_LIMIT  :  return(NormalizeDouble(tick.bid - DEVIATION 
+      default                          :  return(0);
+     }
+  }
+//+------------------------------------------------------------------+
+//| Return the order type description                                |
+//+------------------------------------------------------------------+
+string OrderTypeDescription(const ENUM_ORDER_TYPE order_type)
+  {
+   switch(order_type)
+     {
+      case ORDER_TYPE_BUY              :  return("Buy");
+      case ORDER_TYPE_SELL             :  return("Sell");
+      case ORDER_TYPE_BUY_LIMIT        :  return("Buy Limit");
+      case ORDER_TYPE_SELL_LIMIT       :  return("Sell Limit");
+      case ORDER_TYPE_BUY_STOP         :  return("Buy Stop");
+      case ORDER_TYPE_SELL_STOP        :  return("Sell Stop");
+      case ORDER_TYPE_BUY_STOP_LIMIT   :  return("Buy Stop Limit");
+      case ORDER_TYPE_SELL_STOP_LIMIT  :  return("Sell Stop Limit");
+      case ORDER_TYPE_CLOSE_BY         :  return("Close By");
+      default                          :  return("Unknown order type");
+     }
+  }
+//+------------------------------------------------------------------+
+See also
+OrderSend(), Order Properties, Trade Operation Types
+
+
+--- Page 2257 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2257
+OrderCalcProfit
+The function calculates the profit for the current account, in the current market conditions, based on
+the parameters passed. The function is used for pre-evaluation of the result of a trade operation. The
+value is returned in the account currency.
+bool  OrderCalcProfit(
+   ENUM_ORDER_TYPE       action,           // type of the order (ORDER_TYPE_BUY or ORD
+   string                symbol,           // symbol name
+   double                volume,           // volume
+   double                price_open,       // open price
+   double                price_close,      // close price
+   double&               profit            // variable for obtaining the profit value
+   );
+Parameters
+action
+[in]  Type of the order, can be one of the two values of the ENUM_ORDER_TYPE enumeration:
+ORDER_TYPE_BUY or ORDER_TYPE_SELL. 
+symbol
+[in]  Symbol name.
+volume
+[in]  Volume of the trade operation.
+price_open
+[in]  Open price.
+price_close
+[in]  Close price.
+profit
+[out]  The variable, to which the calculated value of the profit will be written in case the function
+is successfully executed. The estimated profit value depends on many factors, and can differ in
+different market environments.
+Return Value
+The function returns true in case of success; otherwise it returns false. If an invalid order type is
+specified, the function will return false. In order to obtain information about the error, call
+GetLastError().
+Example:
+#define   VOLUME     1.0   // order volume
+#define   DEVIATION  100   // number of points before the close price
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+
+
+--- Page 2258 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2258
+void OnStart()
+  {
+   string currency_profit=SymbolInfoString(_Symbol,SYMBOL_CURRENCY_PROFIT);   // profi
+   double close_price=ChartPriceOnDropped(); // the price coordinate, corresponding to
+//---
+   for(int i=0; i<=ORDER_TYPE_SELL; i++)
+     {
+      ENUM_ORDER_TYPE order_type=(ENUM_ORDER_TYPE)i;                 // order type: 0 
+      double open_price=PriceOpenByOrderType(_Symbol, order_type);   // open price: fo
+     
+      //--- if the open price is not received, continue the loop
+      if(open_price==0)
+         continue;
+      
+      //--- if the close price is zero (the script was not launched by dragging onto t
+      if(close_price==0)
+         close_price=(order_type==ORDER_TYPE_BUY ? open_price + DEVIATION * _Point : o
+      
+      //--- calculate the approximate profit size for the current account and market e
+      double profit=0;
+      ResetLastError();
+      if(!OrderCalcProfit(order_type, _Symbol, VOLUME, open_price, close_price, profit
+        {
+         Print("OrderCalcProfit() failed. Error ", GetLastError());
+         continue;
+        }
+      
+      //--- print the received profit value in the journal
+      PrintFormat("Estimated profit for %.2f %s position on %s with opening price of %
+                  VOLUME, OrderTypeDescription(order_type), _Symbol, _Digits, open_pri
+      
+     }
+   /*
+   result:
+   Estimated profit for 1.00 Buy position on EURUSD with opening price of 1.10757 and 
+   Estimated profit for 1.00 Sell position on EURUSD with opening price of 1.10753 and
+   */
+  }
+//+------------------------------------------------------------------+
+//| Return open price by order type                                  |
+//+------------------------------------------------------------------+
+double PriceOpenByOrderType(const string symbol, const ENUM_ORDER_TYPE order_type)
+  {
+   MqlTick tick={};
+//--- get the last prices by symbol
+   if(!SymbolInfoTick(symbol, tick))
+     {
+
+
+--- Page 2259 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2259
+      Print("SymbolInfoTick() failed. Error ", GetLastError());
+      return 0;
+     }
+     
+//--- return the price depending on the order type
+   switch(order_type)
+     {
+      case ORDER_TYPE_BUY              :  return(tick.ask);
+      case ORDER_TYPE_SELL             :  return(tick.bid);
+      default                          :  return(0);
+     }
+  }
+//+------------------------------------------------------------------+
+//| Return the order type description                                |
+//+------------------------------------------------------------------+
+string OrderTypeDescription(const ENUM_ORDER_TYPE order_type)
+  {
+   switch(order_type)
+     {
+      case ORDER_TYPE_BUY              :  return("Buy");
+      case ORDER_TYPE_SELL             :  return("Sell");
+      default                          :  return("Unknown order type");
+     }
+  }
+See also
+OrderSend(), Order Properties, Trade Operation Types
+
+
+--- Page 2260 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2260
+OrderCheck
+The OrderCheck() function checks if there are enough money to execute a required trade operation.
+The check results are placed to the fields of the MqlTradeCheckResult structure.
+bool  OrderCheck(
+   MqlTradeRequest&       request,      // request structure
+   MqlTradeCheckResult&   result        // result structure
+   );
+Parameters
+request
+[in]  Pointer to the structure of the MqlTradeRequest type, which describes the required trade
+action.
+result
+[in,out]  Pointer to the structure of the MqlTradeCheckResult type, to which the check result will
+be placed.
+Return Value
+If funds are not enough for the operation, or parameters are filled out incorrectly, the function
+returns false. In case of a successful basic check of structures (check of pointers), it returns true.
+However, this is not an indication that the requested trade operation is sure to be successfully
+executed. For a more detailed description of the function execution result, analyze the fields of the
+result structure. 
+In order to obtain information about the error, call the GetLastError() function.
+Example:
+#define   DEVIATION     5              // allowed deviation from the price
+#define   VOLUME        1.0            // order volume
+#define   EXPERT_MAGIC  123            // MagicNumber
+#define   DIRECTION     ORDER_TYPE_BUY // opened position direction (ORDER_TYPE_BUY or
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- declare and initialize the request, verification and result structures
+   MqlTradeRequest     request={};
+   MqlTradeCheckResult check  ={};
+   MqlTradeResult      result ={};
+   
+//--- prepare trade request parameters
+   PrepareRequest(_Symbol, DIRECTION, VOLUME, request);
+   
+//--- check trade request parameters
+   ResetLastError();
+
+
+--- Page 2261 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2261
+   bool res=OrderCheck(request, check);
+   if(!res)
+     {
+      PrintFormat("Trade request verification completed with error %d\nServer retcode:
+      return;
+     }
+     
+//--- trade request check was successful - display the description of the trade reques
+   Print("Trade request verification completed successfully");
+   MqlTradeCheckResultPrint(check, 14);
+   
+//--- send a trade request
+   if(!OrderSend(request, result))
+      Print("OrderSend error ", GetLastError());    // if unable to send the request, 
+      
+//--- information about the operation
+   PrintFormat("Trade request result: retcode=%u, deal=%I64u, order=%I64u", result.ret
+   /*
+   result with disabled auto trading in the client terminal:
+   Trade request verification completed with error 4752
+   Server retcode: 10027, comment: AutoTrading disabled by client
+   
+   enable auto trading and check again on a closed market:
+   Experts   automated trading is enabled
+   Trade request verification completed successfully
+   Retcode:      0
+   Balance:      10779.50 USD
+   Equity:       10779.50 USD
+   Profit:       0.00 USD
+   Margin:       1104.79 USD
+   Margin free:  9674.71 USD
+   Margin level: 975.71 %
+   Comment:      Done
+   OrderSend error 4756
+   Trade request result: retcode=10018, deal=0, order=0
+   
+   check on the open market:
+   Trade request verification completed successfully
+   Retcode:      0
+   Balance:      10779.50 USD
+   Equity:       10779.50 USD
+   Profit:       0.00 USD
+   Margin:       110.46 USD
+   Margin free:  10669.04 USD
+   Margin level: 9758.74 %
+   Comment:      Done
+   Trade request result: retcode=10009, deal=2777010968, order=2802818813
+   */
+  }
+
+
+--- Page 2262 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2262
+//+------------------------------------------------------------------+
+//| Prepare parameters for a trade request                           |
+//+------------------------------------------------------------------+
+void PrepareRequest(const string symbol, const ENUM_ORDER_TYPE order_type, const doubl
+  {
+   ENUM_ORDER_TYPE type=(DIRECTION !=ORDER_TYPE_BUY ? ORDER_TYPE_SELL : DIRECTION);
+   double price=(DIRECTION==ORDER_TYPE_BUY ? SymbolInfoDouble(Symbol(), SYMBOL_ASK) : 
+//--- request parameters
+   request.action    = TRADE_ACTION_DEAL; // trading operation type
+   request.symbol    = symbol;            // symbol
+   request.volume    = volume;            // volume
+   request.type      = type;              // order type
+   request.price     = price;             // open price
+   request.deviation = DEVIATION;         // allowed deviation from the price
+   request.magic     = EXPERT_MAGIC;      // order MagicNumber
+  }
+//+------------------------------------------------------------------+
+//| Print the fields of the trade request                            |
+//| verification result in the journal                               |
+//+------------------------------------------------------------------+
+void MqlTradeCheckResultPrint(const MqlTradeCheckResult &check, const uint header_widt
+  {
+//--- get the account currency and the number of decimal places for the account curren
+   string currency=AccountInfoString(ACCOUNT_CURRENCY);
+   int    digits  =(int)AccountInfoInteger(ACCOUNT_CURRENCY_DIGITS);
+   
+//--- define the header text and the width of the header field
+//--- if the header width is passed to the function equal to zero, then the width will
+   string header="Retcode:";
+   uint w=(header_width==0 ? header.Length()+1 : header_width);
+//--- display the return code with the header of the specified width in the journal
+   PrintFormat("%-*s%-u", w, header, check.retcode);
+   
+//--- display the balance value after executing a trade operation in the journal
+   header="Balance:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   PrintFormat("%-*s%-.*f %s", w, header, digits, check.balance, currency);
+   
+//--- display the equity value after executing a trade operation in the journal
+   header="Equity:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   PrintFormat("%-*s%-.*f %s", w, header, digits, check.equity, currency);
+      
+//--- display the floating profit value after executing a trading operation in the jou
+   header="Profit:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   PrintFormat("%-*s%-.*f %s", w, header, digits, check.profit, currency);      
+      
+//--- display the amount of margin, required for the necessary trading operation, in t
+
+
+--- Page 2263 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2263
+   header="Margin:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   PrintFormat("%-*s%-.*f %s", w, header, digits, check.margin, currency);      
+      
+//--- display the value of equity to be left after conducting a trading operation in t
+   header="Margin free:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   PrintFormat("%-*s%-.*f %s", w, header, digits, check.margin_free, currency);      
+      
+//--- display the margin level to be set after completing the required trading operati
+   header="Margin level:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   PrintFormat("%-*s%-.2f %%", w, header, check.margin_level);      
+      
+//--- display the comment on the response code and error description in the journal
+   header="Comment:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   PrintFormat("%-*s%-s", w, header, check.comment);      
+  }
+See also
+OrderSend(), Trade Operation Types, Trade Request Structure, Structure of Request Check Results,
+Structure of a Trade Request Result
+
+
+--- Page 2264 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2264
+OrderSend
+The OrderSend() function is used for executing trade operations by sending requests to a trade server.
+bool  OrderSend(
+   MqlTradeRequest&  request,      // query structure
+   MqlTradeResult&   result        // structure of the answer
+   );
+Parameters
+request
+[in]  Pointer to a structure of MqlTradeRequest type describing the trade activity of the client.
+result
+[in,out]  Pointer to a structure of MqlTradeResult type describing the result of trade operation in
+case of a successful completion (if true is returned).
+Return Value
+In case of a successful basic check of structures (index checking) returns true. However, this is not
+a sign of successful execution of a trade operation. For a more detailed description of the
+function execution result, analyze the fields of result structure.
+Note
+The trade requests go through several stages of checking on a trade server. First of all, it checks if
+all the required fields of the request parameter are filled out correctly. If there are no errors, the
+server accepts the order for further processing. If the order is successfully accepted by the trade
+server, the OrderSend() function returns true.
+It is recommended to check the request before sending it to a trade server. To check requests, use
+the OrderCheck() function. It checks if there are enough funds to execute the trade operation, and
+returns many useful parameters in the results of trade request checking:
+· return code containing information about errors in the checked request;
+· balance value that will appear after the trade operation is executed;
+· equity value that will appear after the trade operation is executed;
+· floating point value that will appear after the trade operation is executed;
+· margin required for the trade operation;
+· amount of free equity that will remain after the execution of the trade operation;
+· the margin level that will be set after the trade operation is executed;
+· comment to the reply code, error description.
+When sending a market order (MqlTradeRequest.action=TRADE_ACTION_DEAL), the successful result
+of the OrderSend() function does not mean that the order has been executed (appropriate trades
+have been performed). In this case, 'true' means only that the order has been successfully placed in
+the trading system for further execution. The trade server can fill in the deal or order field values in
+the returned result structure, if it is aware of these data when forming a response to an OrderSend()
+call. Generally, event(s) of executing trades corresponding to an order may happen after sending a
+response to the OrderSend() call. Therefore, for any type of a trade request, when receiving the
+OrderSend() execution result, we should first check the retcode trade server response code and the
+
+
+--- Page 2265 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2265
+retcode_external external system response code (if necessary) available in the obtained result
+structure.
+Each accepted order is stored on the trade server awaiting processing until one of the conditions for
+its execution occurs: 
+· expiration, 
+· appearance of an opposite request,
+· order execution when the execution price appears,
+· a request to cancel the order is received.
+At the moment of the order processing, the trade server sends to the terminal a message about the
+occurrence of the Trade event, which can be processed by the OnTrade() function.
+The result of executing the trade request on a server sent by OrderSend() function can be tracked by
+OnTradeTransaction handler. It should be noted that OnTradeTransaction handler will be called
+several times when executing one trade request.
+For example, when sending a market buy order, it is handled, an appropriate buy order is created
+for the account, the order is then executed and removed from the list of the open ones, then it is
+added to the orders history, an appropriate deal is added to the history and a new position is
+created. OnTradeTransaction function will be called for each of these events.
+Example:
+//--- value for ORDER_MAGIC
+input long order_magic=55555;
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- make sure that the account is demo
+   if(AccountInfoInteger(ACCOUNT_TRADE_MODE)==ACCOUNT_TRADE_MODE_REAL)
+     {
+      Alert("Script operation is not allowed on a live account!");
+      return;
+     }
+//--- place or delete order
+   if(GetOrdersTotalByMagic(order_magic)==0) 
+     {
+      //--- no current orders - place an order
+      uint res=SendRandomPendingOrder(order_magic);
+      Print("Return code of the trade server ",res);
+     }
+   else // there are orders - delete orders
+     {
+      DeleteAllOrdersByMagic(order_magic);
+     }
+//---
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 2266 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2266
+//| Receives the current number of orders with specified ORDER_MAGIC |
+//+------------------------------------------------------------------+
+int GetOrdersTotalByMagic(long const magic_number)
+  {
+   ulong order_ticket;
+   int total=0;
+//--- go through all pending orders
+   for(int i=0;i<OrdersTotal();i++)
+      if((order_ticket=OrderGetTicket(i))>0)
+         if(magic_number==OrderGetInteger(ORDER_MAGIC)) total++;
+//---
+   return(total);
+  }
+//+------------------------------------------------------------------+
+//| Deletes all pending orders with specified ORDER_MAGIC            |
+//+------------------------------------------------------------------+
+void DeleteAllOrdersByMagic(long const magic_number)
+  {
+   ulong order_ticket;
+//--- go through all pending orders
+   for(int i=OrdersTotal()-1;i>=0;i--)
+      if((order_ticket=OrderGetTicket(i))>0)
+         //--- order with appropriate ORDER_MAGIC
+         if(magic_number==OrderGetInteger(ORDER_MAGIC))
+           {
+            MqlTradeResult result={};
+            MqlTradeRequest request={};
+            request.order=order_ticket;
+            request.action=TRADE_ACTION_REMOVE;
+            OrderSend(request,result);
+            //--- write the server reply to log
+            Print(__FUNCTION__,": ",result.comment," reply code ",result.retcode);
+           }
+//---
+  }
+//+------------------------------------------------------------------+
+//| Sets a pending order in a random way                             |
+//+------------------------------------------------------------------+
+uint SendRandomPendingOrder(long const magic_number)
+  {
+//--- prepare a request
+   MqlTradeRequest request={};
+   request.action=TRADE_ACTION_PENDING;         // setting a pending order
+   request.magic=magic_number;                  // ORDER_MAGIC
+   request.symbol=_Symbol;                      // symbol
+   request.volume=0.1;                          // volume in 0.1 lots
+   request.sl=0;                                // Stop Loss is not specified
+   request.tp=0;                                // Take Profit is not specified     
+//--- form the order type
+
+
+--- Page 2267 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2267
+   request.type=GetRandomType();                // order type
+//--- form the price for the pending order
+   request.price=GetRandomPrice(request.type);  // open price
+//--- send a trade request
+   MqlTradeResult result={};
+   OrderSend(request,result);
+//--- write the server reply to log  
+   Print(__FUNCTION__,":",result.comment);
+   if(result.retcode==10016) Print(result.bid,result.ask,result.price);
+//--- return code of the trade server reply
+   return result.retcode;
+  }
+//+------------------------------------------------------------------+
+//| Returns type of a pending order in a random way                  |
+//+------------------------------------------------------------------+
+ENUM_ORDER_TYPE GetRandomType()
+  {
+   int t=MathRand()%4;
+//---   0<=t<4
+   switch(t)
+     {
+      case(0):return(ORDER_TYPE_BUY_LIMIT);
+      case(1):return(ORDER_TYPE_SELL_LIMIT);
+      case(2):return(ORDER_TYPE_BUY_STOP);
+      case(3):return(ORDER_TYPE_SELL_STOP);
+     }
+//--- incorrect value
+   return(WRONG_VALUE);
+  }
+//+------------------------------------------------------------------+
+//| Returns price in a random way                                    |
+//+------------------------------------------------------------------+
+double GetRandomPrice(ENUM_ORDER_TYPE type)
+  {
+   int t=(int)type;
+//--- stop levels for the symbol
+   int distance=(int)SymbolInfoInteger(_Symbol,SYMBOL_TRADE_STOPS_LEVEL);
+//--- receive data of the last tick
+   MqlTick last_tick={};
+   SymbolInfoTick(_Symbol,last_tick);
+//--- calculate price according to the type
+   double price;
+   if(t==2 || t==5) // ORDER_TYPE_BUY_LIMIT or ORDER_TYPE_SELL_STOP
+     {
+      price=last_tick.bid; // depart from price Bid
+      price=price-(distance+(MathRand()%10)*5)*_Point;
+     }
+   else             // ORDER_TYPE_SELL_LIMIT or ORDER_TYPE_BUY_STOP
+     {
+
+
+--- Page 2268 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2268
+      price=last_tick.ask; // depart from price Ask
+      price=price+(distance+(MathRand()%10)*5)*_Point;
+     }
+//---
+   return(price);
+  }
+See also
+Trade Operation Types, Trade Request Structure, Structure of Request Check Results, Structure of a
+Trade Request Result
+
+
+--- Page 2269 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2269
+OrderSendAsync
+The OrderSendAsync() function is used for conducting asynchronous trade operations without waiting
+for the trade server's response to a sent request. The function is designed for high-frequency trading,
+when under the terms of the trading algorithm it is unacceptable to waste time waiting for a response
+from the server.
+bool  OrderSendAsync(
+   MqlTradeRequest&  request,      // Request structure
+   MqlTradeResult&   result        // Response structure
+   );
+Parameters
+request
+[in]  A pointer to a structure of the MqlTradeRequest type that describes the trade action of the
+client.
+result
+[in,out]  A pointer to a structure of the MqlTradeResult type that describes the result of a trade
+operation in case of successful execution of the function (if true is returned).
+Return Value
+Returns true if the request is sent to a trade server. In case the request is not sent, it returns false.
+In 
+case 
+the 
+request 
+is 
+sent, 
+in 
+the 
+result 
+variable 
+the 
+response 
+code 
+contains
+TRADE_RETCODE_PLACED value (code 10008) – "order placed". Successful execution means only the
+fact of sending, but does not give any guarantee that the request has reached the trade server and
+has been accepted for processing. When processing the received request, a trade server sends a
+reply to a client terminal notifying of change in the current state of positions, orders and deals,
+which leads to the generation of the Trade event.
+The result of executing the trade request on a server sent by OrderSendAsync() function can be
+tracked by OnTradeTransaction handler. It should be noted that OnTradeTransaction handler will be
+called several times when executing one trade request.
+For example, when sending a market buy order, it is handled, an appropriate buy order is created
+for the account, the order is then executed and removed from the list of the open ones, then it is
+added to the orders history, an appropriate deal is added to the history and a new position is
+created. OnTradeTransaction function will be called for each of these events. To get such a data,
+the function parameters should be analyzed:
+· trans - this parameter gets MqlTradeTransaction structure describing a trade transaction applied
+to a trade account;
+· request - this parameter gets MqlTradeRequest structure describing the trade request resulted in
+a trade transaction;
+· result - this parameter gets MqlTradeResult structure describing a trade request execution result.
+Note
+In terms of purposes and parameters, the function is similar to OrderSend(), but unlike it, it is
+asynchronous, i.e. does not hold the program operation while waiting for the function execution
+result. You can compare the rate of trade operations of these two functions using the sample Expert
+Advisor.
+
+
+--- Page 2270 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2270
+Example:
+#property description "Expert Advisor for sending trade requests "
+                      " using OrderSendAsync() function.\r\n"
+#property description "Handling trading events using"
+                      " OnTrade() and OnTradeTransaction() handler functions is displa
+#property description "Expert Advisor parameters allow setting Magic Number"
+                      " (unique ID) "
+#property description "and the mode of displaying messages in Experts log. All details
+//--- input parameters
+input int  MagicNumber=1234567;      // Expert Advisor ID
+input bool DescriptionModeFull=true; // Detailed output mode
+//--- variable for using in HistorySelect() call
+datetime history_start;
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- check if autotrading is allowed
+   if(!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED))
+     {
+      Alert("Autotrading in the terminal is disabled, Expert Advisor will be removed."
+      ExpertRemove();
+      return(-1);
+     }
+//--- unable to trade on a real account
+   if(AccountInfoInteger(ACCOUNT_TRADE_MODE)==ACCOUNT_TRADE_MODE_REAL)
+     {
+      Alert("Expert Advisor cannot trade on a real account!");
+      ExpertRemove();
+      return(-2);
+     }
+//--- check if it is possible to trade on this account (for example, trading is imposs
+   if(!AccountInfoInteger(ACCOUNT_TRADE_ALLOWED))
+     {
+      Alert("Trading on this account is disabled");
+      ExpertRemove();
+      return(-3);
+     }
+//--- save the time of launching the Expert Advisor for receiving trading history
+   history_start=TimeCurrent();
+//---
+   CreateBuySellButtons();
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+
+
+--- Page 2271 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2271
+void OnDeinit(const int reason)
+  {
+//--- delete all graphical objects
+   ObjectDelete(0,"Buy");
+   ObjectDelete(0,"Sell");
+//---
+  }
+//+------------------------------------------------------------------+
+//| TradeTransaction function                                        |
+//+------------------------------------------------------------------+
+void OnTradeTransaction(const MqlTradeTransaction &trans,
+                        const MqlTradeRequest &request,
+                        const MqlTradeResult &result)
+  {
+//--- heading named after trading event's handler function 
+   Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
+//--- receive transaction type as enumeration value 
+   ENUM_TRADE_TRANSACTION_TYPE type=trans.type;
+//--- if transaction is a result of request handling
+   if(type==TRADE_TRANSACTION_REQUEST)
+     {
+      //--- display transaction name
+      Print(EnumToString(type));
+      //--- then display the string description of the handled request
+      Print("------------RequestDescription\r\n",
+            RequestDescription(request,DescriptionModeFull));
+      //--- and show description of the request result
+      Print("------------ ResultDescription\r\n",
+            TradeResultDescription(result,DescriptionModeFull));
+     }
+   else // display full description of the transaction for transactions of another typ
+     {
+      Print("------------ TransactionDescription\r\n",
+            TransactionDescription(trans,DescriptionModeFull));
+     }
+//---     
+  }
+//+------------------------------------------------------------------+
+//| Trade function                                                   |
+//+------------------------------------------------------------------+
+void OnTrade()
+  {
+//--- static members for storing trading account status
+   static int prev_positions=0,prev_orders=0,prev_deals=0,prev_history_orders=0;
+//--- request trading history
+   bool update=HistorySelect(history_start,TimeCurrent());
+   PrintFormat("HistorySelect(%s , %s) = %s",
+               TimeToString(history_start),TimeToString(TimeCurrent()),(string)update)
+//--- heading named after trading event's handler function 
+
+
+--- Page 2272 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2272
+   Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
+//--- display handler's name and the number of orders at the moment of handling
+   int curr_positions=PositionsTotal();
+   int curr_orders=OrdersTotal();
+   int curr_deals=HistoryOrdersTotal();
+   int curr_history_orders=HistoryDealsTotal();
+//--- display the number of orders, positions, deals, as well as changes in parenthese
+   PrintFormat("PositionsTotal() = %d (%+d)",
+               curr_positions,(curr_positions-prev_positions));
+   PrintFormat("OrdersTotal() = %d (%+d)",
+               curr_orders,curr_orders-prev_orders);
+   PrintFormat("HistoryOrdersTotal() = %d (%+d)",
+               curr_deals,curr_deals-prev_deals);
+   PrintFormat("HistoryDealsTotal() = %d (%+d)",
+               curr_history_orders,curr_history_orders-prev_history_orders);
+//--- insert a string break to view the log more conveniently
+   Print("");
+//--- save the account status
+   prev_positions=curr_positions;
+   prev_orders=curr_orders;
+   prev_deals=curr_deals;
+   prev_history_orders=curr_history_orders;
+//---
+  }
+//+------------------------------------------------------------------+
+//| ChartEvent function                                              |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id,
+                  const long &lparam,
+                  const double &dparam,
+                  const string &sparam)
+  {
+//--- handling CHARTEVENT_CLICK event ("Clicking the chart")
+   if(id==CHARTEVENT_OBJECT_CLICK)
+     {
+      Print("=> ",__FUNCTION__,": sparam = ",sparam);
+      //--- minimum volume for a deal
+      double volume_min=SymbolInfoDouble(_Symbol,SYMBOL_VOLUME_MIN);
+      //--- if "Buy" button is pressed, then buy
+      if(sparam=="Buy")
+        {
+         PrintFormat("Buy %s %G lot",_Symbol,volume_min);
+         BuyAsync(volume_min);
+         //--- unpress the button
+         ObjectSetInteger(0,"Buy",OBJPROP_STATE,false);
+        }
+      //--- if "Sell" button is pressed, then sell
+      if(sparam=="Sell")
+        {
+
+
+--- Page 2273 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2273
+         PrintFormat("Sell %s %G lot",_Symbol,volume_min);
+         SellAsync(volume_min);
+         //--- unpress the button
+         ObjectSetInteger(0,"Sell",OBJPROP_STATE,false);
+        }
+      ChartRedraw();
+     }
+//---         
+  }
+//+------------------------------------------------------------------+
+//| Returns the text description of a transaction                    |
+//+------------------------------------------------------------------+
+string TransactionDescription(const MqlTradeTransaction &trans,
+                              const bool detailed=true)
+  {
+//--- prepare a string for returning from the function
+   string desc=EnumToString(trans.type)+"\r\n";
+//--- all possible data is added in detailed mode
+   if(detailed)
+     {
+      desc+="Symbol: "+trans.symbol+"\r\n";
+      desc+="Deal ticket: "+(string)trans.deal+"\r\n";
+      desc+="Deal type: "+EnumToString(trans.deal_type)+"\r\n";
+      desc+="Order ticket: "+(string)trans.order+"\r\n";
+      desc+="Order type: "+EnumToString(trans.order_type)+"\r\n";
+      desc+="Order state: "+EnumToString(trans.order_state)+"\r\n";
+      desc+="Order time type: "+EnumToString(trans.time_type)+"\r\n";
+      desc+="Order expiration: "+TimeToString(trans.time_expiration)+"\r\n";
+      desc+="Price: "+StringFormat("%G",trans.price)+"\r\n";
+      desc+="Price trigger: "+StringFormat("%G",trans.price_trigger)+"\r\n";
+      desc+="Stop Loss: "+StringFormat("%G",trans.price_sl)+"\r\n";
+      desc+="Take Profit: "+StringFormat("%G",trans.price_tp)+"\r\n";
+      desc+="Volume: "+StringFormat("%G",trans.volume)+"\r\n";
+     }
+//--- return a received string
+   return desc;
+  }
+//+------------------------------------------------------------------+
+//| Returns the text description of the trade request                |
+//+------------------------------------------------------------------+
+string RequestDescription(const MqlTradeRequest &request,
+                          const bool detailed=true)
+  {
+//--- prepare a string for returning from the function
+   string desc=EnumToString(request.action)+"\r\n";
+//--- add all available data in detailed mode
+   if(detailed)
+     {
+      desc+="Symbol: "+request.symbol+"\r\n";
+
+
+--- Page 2274 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2274
+      desc+="Magic Number: "+StringFormat("%d",request.magic)+"\r\n";
+      desc+="Order ticket: "+(string)request.order+"\r\n";
+      desc+="Order type: "+EnumToString(request.type)+"\r\n";
+      desc+="Order filling: "+EnumToString(request.type_filling)+"\r\n";
+      desc+="Order time type: "+EnumToString(request.type_time)+"\r\n";
+      desc+="Order expiration: "+TimeToString(request.expiration)+"\r\n";
+      desc+="Price: "+StringFormat("%G",request.price)+"\r\n";
+      desc+="Deviation points: "+StringFormat("%G",request.deviation)+"\r\n";
+      desc+="Stop Loss: "+StringFormat("%G",request.sl)+"\r\n";
+      desc+="Take Profit: "+StringFormat("%G",request.tp)+"\r\n";
+      desc+="Stop Limit: "+StringFormat("%G",request.stoplimit)+"\r\n";
+      desc+="Volume: "+StringFormat("%G",request.volume)+"\r\n";
+      desc+="Comment: "+request.comment+"\r\n";
+     }
+//--- return the received string
+   return desc;
+  }
+//+------------------------------------------------------------------+
+//| Returns the text description of request handling result          |
+//+------------------------------------------------------------------+
+string TradeResultDescription(const MqlTradeResult &result,
+                              const bool detailed=true)
+  {
+//--- prepare the string for returning from the function
+   string desc="Retcode "+(string)result.retcode+"\r\n";
+//--- add all available data in detailed mode
+   if(detailed)
+     {
+      desc+="Request ID: "+StringFormat("%d",result.request_id)+"\r\n";
+      desc+="Order ticket: "+(string)result.order+"\r\n";
+      desc+="Deal ticket: "+(string)result.deal+"\r\n";
+      desc+="Volume: "+StringFormat("%G",result.volume)+"\r\n";
+      desc+="Price: "+StringFormat("%G",result.price)+"\r\n";
+      desc+="Ask: "+StringFormat("%G",result.ask)+"\r\n";
+      desc+="Bid: "+StringFormat("%G",result.bid)+"\r\n";
+      desc+="Comment: "+result.comment+"\r\n";
+     }
+//--- return the received string
+   return desc;
+  }
+//+------------------------------------------------------------------+
+//| Create two buttons for buying and selling                        |
+//+------------------------------------------------------------------+
+void CreateBuySellButtons()
+  {
+//--- check the object named "Buy"
+   if(ObjectFind(0,"Buy")>=0)
+     {
+      //--- if the found object is not a button, delete it
+
+
+--- Page 2275 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2275
+      if(ObjectGetInteger(0,"Buy",OBJPROP_TYPE)!=OBJ_BUTTON)
+         ObjectDelete(0,"Buy");
+     }
+   else
+      ObjectCreate(0,"Buy",OBJ_BUTTON,0,0,0); // create "Buy" button
+//--- configure "Buy" button
+   ObjectSetInteger(0,"Buy",OBJPROP_CORNER,CORNER_RIGHT_UPPER);
+   ObjectSetInteger(0,"Buy",OBJPROP_XDISTANCE,100);
+   ObjectSetInteger(0,"Buy",OBJPROP_YDISTANCE,50);
+   ObjectSetInteger(0,"Buy",OBJPROP_XSIZE,70);
+   ObjectSetInteger(0,"Buy",OBJPROP_YSIZE,30);
+   ObjectSetString(0,"Buy",OBJPROP_TEXT,"Buy");
+   ObjectSetInteger(0,"Buy",OBJPROP_COLOR,clrRed);
+//--- check presence of the object named "Sell"
+   if(ObjectFind(0,"Sell")>=0)
+     {
+      //--- if the found object is not a button, delete it
+      if(ObjectGetInteger(0,"Sell",OBJPROP_TYPE)!=OBJ_BUTTON)
+         ObjectDelete(0,"Sell");
+     }
+   else
+      ObjectCreate(0,"Sell",OBJ_BUTTON,0,0,0); // create "Sell" button
+//--- configure "Sell" button
+   ObjectSetInteger(0,"Sell",OBJPROP_CORNER,CORNER_RIGHT_UPPER);
+   ObjectSetInteger(0,"Sell",OBJPROP_XDISTANCE,100);
+   ObjectSetInteger(0,"Sell",OBJPROP_YDISTANCE,100);
+   ObjectSetInteger(0,"Sell",OBJPROP_XSIZE,70);
+   ObjectSetInteger(0,"Sell",OBJPROP_YSIZE,30);
+   ObjectSetString(0,"Sell",OBJPROP_TEXT,"Sell");
+   ObjectSetInteger(0,"Sell",OBJPROP_COLOR,clrBlue);
+//--- perform forced update of the chart to see the buttons immediately
+   ChartRedraw();
+//---
+  }
+//+------------------------------------------------------------------+
+//| Buy using OrderSendAsync() asynchronous function                 |
+//+------------------------------------------------------------------+
+void BuyAsync(double volume)
+  {
+//--- prepare the request
+   MqlTradeRequest req={};
+   req.action      =TRADE_ACTION_DEAL;
+   req.symbol      =_Symbol;
+   req.magic       =MagicNumber;
+   req.volume      =0.1;
+   req.type        =ORDER_TYPE_BUY;
+   req.price       =SymbolInfoDouble(req.symbol,SYMBOL_ASK);
+   req.deviation   =10;
+   req.comment     ="Buy using OrderSendAsync()";
+
+
+--- Page 2276 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2276
+   MqlTradeResult  res={};
+   if(!OrderSendAsync(req,res))
+     {
+      Print(__FUNCTION__,": error ",GetLastError(),", retcode = ",res.retcode);
+     }
+//---
+  }
+//+------------------------------------------------------------------+
+//| Sell using OrderSendAsync() asynchronous function                |
+//+------------------------------------------------------------------+
+void SellAsync(double volume)
+  {
+//--- prepare the request
+   MqlTradeRequest req={};
+   req.action      =TRADE_ACTION_DEAL;
+   req.symbol      =_Symbol;
+   req.magic       =MagicNumber;
+   req.volume      =0.1;
+   req.type        =ORDER_TYPE_SELL;
+   req.price       =SymbolInfoDouble(req.symbol,SYMBOL_BID);
+   req.deviation   =10;
+   req.comment     ="Sell using OrderSendAsync()";
+   MqlTradeResult  res={};
+   if(!OrderSendAsync(req,res))
+     {
+      Print(__FUNCTION__,": error ",GetLastError(),", retcode = ",res.retcode);
+     }
+//---
+  }
+//+------------------------------------------------------------------+
+Example of displaying messages in "Experts" log:
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnChartEvent: sparam = Sell
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Sell EURUSD 0.01 lot
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTradeTransaction at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   TRADE_TRANSACTION_REQUEST
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   ------------RequestDescription
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   TRADE_ACTION_DEAL
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Symbol: EURUSD
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Magic Number: 1234567
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order ticket: 16361998
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order type: ORDER_TYPE_SELL
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order filling: ORDER_FILLING_FOK
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order time type: ORDER_TIME_GTC
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order expiration: 1970.01.01 00:00
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price: 1.29313
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deviation points: 10
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Stop Loss: 0
+
+
+--- Page 2277 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2277
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Take Profit: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Stop Limit: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Volume: 0.1
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Comment: Sell using OrderSendAsync()
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   ------------ ResultDescription
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Retcode 10009
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Request ID: 2
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order ticket: 16361998
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal ticket: 15048668
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Volume: 0.1
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price: 1.29313
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Ask: 1.29319
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Bid: 1.29313
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Comment: 
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistorySelect( 09:34 , 09:52) = true
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTrade at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   PositionsTotal() = 1 (+1)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   OrdersTotal() = 0 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistoryOrdersTotal() = 2 (+2)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistoryDealsTotal() = 2 (+2)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTradeTransaction at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   ------------ TransactionDescription
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   TRADE_TRANSACTION_ORDER_ADD
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Symbol: EURUSD
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal ticket: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal type: DEAL_TYPE_BUY
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order ticket: 16361998
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order type: ORDER_TYPE_SELL
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order state: ORDER_STATE_STARTED
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order time type: ORDER_TIME_GTC
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order expiration: 1970.01.01 00:00
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price: 1.29313
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price trigger: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Stop Loss: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Take Profit: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Volume: 0.1
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTradeTransaction at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   ------------ TransactionDescription
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   TRADE_TRANSACTION_ORDER_DELETE
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Symbol: EURUSD
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal ticket: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal type: DEAL_TYPE_BUY
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order ticket: 16361998
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order type: ORDER_TYPE_SELL
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order state: ORDER_STATE_STARTED
+
+
+--- Page 2278 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2278
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order time type: ORDER_TIME_GTC
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order expiration: 1970.01.01 00:00
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price: 1.29313
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price trigger: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Stop Loss: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Take Profit: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Volume: 0.1
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistorySelect( 09:34 , 09:52) = true
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTrade at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   PositionsTotal() = 1 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   OrdersTotal() = 0 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistoryOrdersTotal() = 2 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistoryDealsTotal() = 2 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTradeTransaction at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   ------------ TransactionDescription
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   TRADE_TRANSACTION_HISTORY_ADD
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Symbol: EURUSD
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal ticket: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal type: DEAL_TYPE_BUY
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order ticket: 16361998
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order type: ORDER_TYPE_SELL
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order state: ORDER_STATE_FILLED
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order time type: ORDER_TIME_GTC
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order expiration: 1970.01.01 00:00
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price: 1.29313
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price trigger: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Stop Loss: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Take Profit: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Volume: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistorySelect( 09:34 , 09:52) = true
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTrade at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   PositionsTotal() = 1 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   OrdersTotal() = 0 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistoryOrdersTotal() = 2 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistoryDealsTotal() = 2 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTradeTransaction at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   ------------ TransactionDescription
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   TRADE_TRANSACTION_DEAL_ADD
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Symbol: EURUSD
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal ticket: 15048668
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Deal type: DEAL_TYPE_SELL
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order ticket: 16361998
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order type: ORDER_TYPE_BUY
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order state: ORDER_STATE_STARTED
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order time type: ORDER_TIME_GTC
+
+
+--- Page 2279 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2279
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Order expiration: 1970.01.01 00:00
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price: 1.29313
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Price trigger: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Stop Loss: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Take Profit: 0
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   Volume: 0.1
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistorySelect( 09:34 , 09:52) = true
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   => OnTrade at 09:52:53
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   PositionsTotal() = 1 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   OrdersTotal() = 0 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistoryOrdersTotal() = 2 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   HistoryDealsTotal() = 2 (+0)
+ 12:52:52   ExpertAdvisor (EURUSD,H1)   
+
+
+--- Page 2280 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2280
+PositionsTotal
+Returns the number of open positions.
+int  PositionsTotal();
+Return Value
+Value of int type.
+Note
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol.
+Example:
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- get and print the number of open positions on the account in the journal
+   int total=PositionsTotal();
+   Print("Number of open positions on account: ", total);
+   /*
+   result:
+   Number of open positions on account: 2
+   */
+  }
+See also
+PositionGetSymbol(), PositionSelect(), Position Properties
+
+
+--- Page 2281 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2281
+PositionGetSymbol
+Returns the symbol corresponding to the open position and automatically selects the position for
+further working with it using functions PositionGetDouble, PositionGetInteger, PositionGetString.
+string  PositionGetSymbol(
+   int  index      // Number in the list of positions
+   );
+Parameters
+index
+[in]  Number of the position in the list of open positions.
+Return Value
+Value of the string type. If the position was not found, an empty string will be returned. To get an
+error code, call the GetLastError() function.
+Note
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol.
+Example:
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- get the number of open positions on the account
+   int total=PositionsTotal();
+   for(int i=0; i<total; i++)
+     {
+      //--- get position symbol by i loop index
+      ResetLastError();
+      string symbol=PositionGetSymbol(i);
+      
+      //--- if the position symbol is successfully received, then the position at the 
+      //--- and we can obtain its properties using PositionGetDouble, PositionGetInteg
+      if(symbol!="")
+        {
+         ENUM_POSITION_TYPE type=(ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE)
+         PrintFormat("Position symbol at index %d: %s, position type: %s", i, symbol, 
+        }
+      else
+
+
+--- Page 2282 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2282
+        {
+         PrintFormat("PositionGetSymbol(%d) failed. Error %d", i, GetLastError());
+         continue;
+        }
+     }
+   /*
+   result:
+   Position symbol at index 0: GBPUSD, position type: SELL
+   Position symbol at index 1: EURUSD, position type: BUY
+   */
+  }
+See also
+PositionsTotal(), PositionSelect(), Position Properties
+
+
+--- Page 2283 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2283
+PositionSelect
+Chooses an open position for further working with it. Returns true if the function is successfully
+completed. Returns false in case of failure. To obtain information about the error, call GetLastError().
+bool  PositionSelect(
+   string  symbol      // Symbol name
+   );
+Parameters
+symbol
+[in]  Name of the financial security.
+Return Value
+Value of the bool type.
+Note
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. In this case, PositionSelect will select a position with the lowest ticket.
+Function PositionSelect() copies data about a position into the program environment, and further
+calls of PositionGetDouble(), PositionGetInteger() and PositionGetString() return the earlier copied
+data. This means that the position itself may no longer exist (or its volume, direction, etc. has
+changed), but data of this position still can be obtained. To ensure receipt of fresh data about a
+position, it is recommended to call PositionSelect() right before referring to them.
+Example:
+#define   SYMBOL_NAME   "EURUSD"
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- select a position on a specified symbol
+   if(!PositionSelect(SYMBOL_NAME))
+     {
+      PrintFormat("PositionSelect(%s) failed. Error %d",SYMBOL_NAME, GetLastError());
+      return;
+     }
+//--- if a position is selected, we can obtain its data using PositionGetDouble(), Pos
+//--- get the selected position ticket
+   ResetLastError();
+
+
+--- Page 2284 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2284
+   long ticket=PositionGetInteger(POSITION_TICKET);
+   if(ticket==0)
+     {
+      PrintFormat("Failed to get %s position ticket. Error %d", SYMBOL_NAME, GetLastEr
+      return;
+     }
+     
+//--- if a ticket is successfully received, print the selected position symbol and tic
+   PrintFormat("The position that is selected on the %s symbol has ticket %I64d", SYMB
+   /*
+   result:
+   The position that is selected on the EURUSD symbol has ticket 2810846623
+   */
+  }
+See also
+PositionGetSymbol(), PositionsTotal(), Position Properties
+
+
+--- Page 2285 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2285
+PositionSelectByTicket
+Selects an open position to work with based on the ticket number specified in the position. If
+successful, returns true. Returns false if the function failed. Call GetLastError() for error details.
+bool  PositionSelectByTicket(
+   ulong   ticket     // Position ticket
+   );
+Parameters
+ticket
+[in]  Position ticket.
+Return Value
+A value of the bool type.
+Note
+The PositionSelectByTicket() function copies position data to the program environment. Further calls
+of PositionGetDouble(), PositionGetInteger() and PositionGetString() return the previously copied
+data. Even if a position does not exist already (or its size, direction etc. has changed), the data may
+still be received sometimes. To make sure that you receive valid position data, it is recommended
+to call PositionSelectByTicket() before you access the data.
+Example:
+#define   EXPERT_MAGIC  123456   // MagicNumber
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- declare and initialize the request and result structures
+   MqlTradeRequest request={};
+   MqlTradeResult  result ={};
+   
+//--- fill in trade request parameters to open a long position
+   request.action    = TRADE_ACTION_DEAL;                      // trading operation ty
+   request.symbol    = Symbol();                               // symbol
+   request.volume    = 0.1;                                    // volume of 0.1 lot
+   request.type      = ORDER_TYPE_BUY;                         // order type
+   request.price     = SymbolInfoDouble(Symbol(), SYMBOL_ASK); // open price
+   request.deviation = 5;                                      // allowed deviation fr
+   request.magic     = EXPERT_MAGIC;                           // order MagicNumber
+   
+//--- send a request. If failed to send a request, display the error code and complete
+   if(!OrderSend(request, result))
+     {
+      PrintFormat("OrderSend error ", GetLastError());
+
+
+--- Page 2286 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2286
+      return;
+     }
+      
+//--- display operation data
+   PrintFormat("Trade request result: retcode: %u, deal: %I64u, order: %I64u", result.
+   
+//--- get the position ticket from the trade operation result and select the position 
+//--- the ticket of a newly opened position corresponds to the ticket of the order tha
+   ulong ticket=result.order;
+   ResetLastError();
+   if(!PositionSelectByTicket(ticket))
+     {
+      PrintFormat("PositionSelectByTicket(%I64u) failed. Error %d", ticket, GetLastErr
+      return;
+     }
+//--- display the data of a position, selected by ticket, in the journal
+   ENUM_POSITION_TYPE type  = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+   long               time  = PositionGetInteger(POSITION_TIME_MSC);
+   double             price = PositionGetDouble(POSITION_PRICE_OPEN);
+   double             volume= PositionGetDouble(POSITION_VOLUME);
+   string             symbol= PositionGetString(POSITION_SYMBOL);
+   int                digits= (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+   PrintFormat("Current selected position: %s %.2f %s #%I64u at %.*f, %s",
+               symbol, volume, (type==POSITION_TYPE_BUY ? "Buy" : "Sell"), ticket, dig
+   /*
+   result:
+   Trade request result: retcode: 10009, deal: 2778100901, order: 2803905975
+   Current selected position: EURUSD 0.10 Buy #2803905975 at 1.10672, 2024.09.02 12:09
+   */
+  }
+//+------------------------------------------------------------------+
+//| Return time with milliseconds                                    |
+//+------------------------------------------------------------------+
+string TimeMscToString(const long time_msc, int flags=TIME_DATE|TIME_MINUTES|TIME_SECO
+  {
+   return(TimeToString(time_msc/1000, flags) + "." + IntegerToString(time_msc %1000, 3
+  }
+See also
+PositionGetSymbol(), PositionsTotal(), Position Properties
+
+
+--- Page 2287 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2287
+PositionGetDouble
+The function returns the requested property of an open position, pre-selected using PositionGetSymbol
+or PositionSelect. The position property must be of the double type. There are 2 variants of the
+function.
+1. Immediately returns the property value.
+double  PositionGetDouble(
+   ENUM_POSITION_PROPERTY_DOUBLE  property_id      // Property identifier
+   );
+2. Returns true or false, depending on the success of the function execution. If successful, the value
+of the property is placed in a receiving variable passed by reference by the last parameter.
+bool  PositionGetDouble(
+   ENUM_POSITION_PROPERTY_DOUBLE  property_id,     // Property identifier
+   double&                        double_var       // Here we accept the property valu
+   );
+Parameters
+property_id
+[in]  Identifier of a position property. The value can be one of the values of the
+ENUM_POSITION_PROPERTY_DOUBLE enumeration.
+double_var
+[out]  Variable of the double type, accepting the value of the requested property.
+Return Value
+Value of the double type. If the function fails, 0 is returned.
+Note
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. 
+To ensure receipt of fresh data about a position, it is recommended to call PositionSelect() right
+before referring to them.
+Example:
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- in a loop by all account positions
+
+
+--- Page 2288 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2288
+   int total=PositionsTotal();
+   for(int i=0; i<total; i++)
+     {
+      //--- get the ticket of the next position by automatically selecting a position 
+      ulong ticket=PositionGetTicket(i);
+      if(ticket==0)
+         continue;
+      
+      //--- get the position type and display the header for the list of position real
+      string type=(PositionGetInteger(POSITION_TYPE)==POSITION_TYPE ? "Buy" : "Sell");
+      PrintFormat("Double properties of an open position %s #%I64u:", type, ticket);
+      
+      //--- print all the real properties of the selected position under the header
+      PositionPropertiesDoublePrint(15);
+     }
+   /*
+   result:
+   Double properties of an open position Buy #2807075208:
+   Volume:        1.00
+   Price open:    1.10516
+   StopLoss:      0.00000
+   TakeProfit:    0.00000
+   Price current: 1.10518
+   Swap:          0.00
+   Profit:        2.00 USD
+   */
+  }
+//+------------------------------------------------------------------+
+//| Display real properties of the selected position in the journal  |
+//+------------------------------------------------------------------+
+void PositionPropertiesDoublePrint(const uint header_width=0)
+  {
+   uint   w=0;
+   string header="";
+   double value=0;
+   
+//--- get the account currency, position symbol and the number of decimal places for t
+   string currency=AccountInfoString(ACCOUNT_CURRENCY);
+   string symbol  =PositionGetString(POSITION_SYMBOL);
+   int    digits  =(int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+   
+//--- define the header text and the width of the header field
+//--- if the header width is passed to the function equal to zero, then the width will
+   header="Volume:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+//--- get and display the position volume with the specified header width in the journ
+   if(!PositionGetDouble(POSITION_VOLUME, value))
+      return;
+   PrintFormat("%-*s%-.2f", w, header, value);
+
+
+--- Page 2289 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2289
+   
+//--- display the position price value in the journal
+   header="Price open:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   if(!PositionGetDouble(POSITION_PRICE_OPEN, value))
+      return;
+   PrintFormat("%-*s%-.*f", w, header, digits, value);
+   
+//--- display the StopLoss value in the journal
+   header="StopLoss:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   if(!PositionGetDouble(POSITION_SL, value))
+      return;
+   PrintFormat("%-*s%-.*f", w, header, digits, value);
+   
+//--- display the TakeProfit value in the journal
+   header="TakeProfit:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   if(!PositionGetDouble(POSITION_TP, value))
+      return;
+   PrintFormat("%-*s%-.*f", w, header, digits, value);
+//--- display the 'Price current' value in the journal
+   header="Price current:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   if(!PositionGetDouble(POSITION_PRICE_CURRENT, value))
+      return;
+   PrintFormat("%-*s%-.*f", w, header, digits, value);
+//--- display the accumulated swap value in the journal
+   header="Swap:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   if(!PositionGetDouble(POSITION_SWAP, value))
+      return;
+   PrintFormat("%-*s%-.2f", w, header, value);
+//--- display the current profit value to the journal
+   header="Profit:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   if(!PositionGetDouble(POSITION_PROFIT, value))
+      return;
+   PrintFormat("%-*s%-.2f %s", w, header, value, currency);
+  }
+See also
+PositionGetSymbol(), PositionSelect(), Position Properties
+
+
+--- Page 2290 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2290
+PositionGetInteger
+The function returns the requested property of an open position, pre-selected using PositionGetSymbol
+or PositionSelect. The position property should be of datetime, int type. There are 2 variants of the
+function.
+1. Immediately returns the property value.
+long  PositionGetInteger(
+   ENUM_POSITION_PROPERTY_INTEGER  property_id      // Property identifier
+   );
+2. Returns true or false, depending on the success of the function execution. If successful, the value
+of the property is placed in a receiving variables passed by reference by the last parameter.
+bool  PositionGetInteger(
+   ENUM_POSITION_PROPERTY_INTEGER  property_id,     // Property identifier
+   long&                           long_var         // Here we accept the property val
+   );
+Parameters
+property_id
+[in]  Identifier of a position property. The value can be one of the values of the
+ENUM_POSITION_PROPERTY_INTEGER enumeration.
+long_var
+[out]  Variable of the long type accepting the value of the requested property.
+Return Value
+Value of the long type. If the function fails, 0 is returned.
+Note
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. 
+To ensure receipt of fresh data about a position, it is recommended to call PositionSelect() right
+before referring to them.
+Example:
+//+------------------------------------------------------------------+
+//| Trade function                                                   |
+//+------------------------------------------------------------------+
+void OnTrade()
+  {
+//--- check if a position is present and display the time of its changing
+
+
+--- Page 2291 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2291
+   if(PositionSelect(_Symbol))
+     {     
+//--- receive position ID for further work
+      ulong position_ID=PositionGetInteger(POSITION_IDENTIFIER);
+      Print(_Symbol," position #",position_ID);
+//--- receive the time of position forming in milliseconds since 01.01.1970
+      long create_time_msc=PositionGetInteger(POSITION_TIME_MSC);
+      PrintFormat("Position #%d  POSITION_TIME_MSC = %i64 milliseconds => %s",position
+                  create_time_msc,TimeToString(create_time_msc/1000));
+//--- receive the time of the position's last change in seconds since 01.01.1970
+      long update_time_sec=PositionGetInteger(POSITION_TIME_UPDATE);
+      PrintFormat("Position #%d  POSITION_TIME_UPDATE = %i64 seconds => %s",
+                  position_ID,update_time_sec,TimeToString(update_time_sec));
+//--- receive the time of the position's last change in milliseconds since 01.01.1970
+      long update_time_msc=PositionGetInteger(POSITION_TIME_UPDATE_MSC);
+      PrintFormat("Position #%d  POSITION_TIME_UPDATE_MSC = %i64 milliseconds => %s",
+                  position_ID,update_time_msc,TimeToString(update_time_msc/1000));
+     }
+//---
+  }
+See also
+PositionGetSymbol(), PositionSelect(), Position Properties
+
+
+--- Page 2292 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2292
+PositionGetString
+The function returns the requested property of an open position, pre-selected using PositionGetSymbol
+or PositionSelect. The position property should be of the string type. There are 2 variants of the
+function.
+1. Immediately returns the property value.
+string  PositionGetString(
+   ENUM_POSITION_PROPERTY_STRING  property_id      // Property identifier
+   );
+2. Returns true or false, depending on the success of the function execution. If successful, the value
+of the property is placed in a receiving variables passed by reference by the last parameter.
+bool  PositionGetString(
+   ENUM_POSITION_PROPERTY_STRING  property_id,     // Property identifier
+   string&                        string_var       // Here we accept the property valu
+   );
+Parameters
+property_id
+[in]  Identifier of a position property. The value can be one of the values of the
+ENUM_POSITION_PROPERTY_STRING enumeration.
+string_var
+[out]  Variable of the string type accepting the value of the requested property.
+Return Value
+Value of the string type. If the function fails, an empty string is returned.
+Note
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. 
+To ensure receipt of fresh data about a position, it is recommended to call PositionSelect() right
+before referring to them.
+Example:
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- in a loop by all account positions
+
+
+--- Page 2293 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2293
+   int total=PositionsTotal();
+   for(int i=0; i<total; i++)
+     {
+      //--- get the ticket of the next position by automatically selecting a position 
+      ulong ticket=PositionGetTicket(i);
+      if(ticket==0)
+         continue;
+      
+      //--- get the position type and display the header for the list of position stri
+      string type=(PositionGetInteger(POSITION_TYPE)==POSITION_TYPE ? "Buy" : "Sell");
+      PrintFormat("String properties of an open position %s #%I64u:", type, ticket);
+      
+      //--- print all the string properties of the selected position under the header
+      PositionPropertiesStringPrint(15);
+     }
+   /*
+   result:
+   String properties of an open position Buy #2810798881:
+   Symbol:        EURUSD
+   Comment:       Test PositionGetString
+   External ID:   
+   */
+  }
+//+------------------------------------------------------------------+
+//| Display string properties of the selected position in the journal|
+//+------------------------------------------------------------------+
+void PositionPropertiesStringPrint(const uint header_width=0)
+  {
+   uint   w=0;
+   string header="";
+   string value="";
+   
+//--- define the header text and the width of the header field
+//--- if the header width is passed to the function equal to zero, then the width will
+   header="Symbol:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+//--- get and display the position symbol with the specified header width in the journ
+   if(!PositionGetString(POSITION_SYMBOL, value))
+      return;
+   PrintFormat("%-*s%-s", w, header, value);
+   
+//--- display the position comment in the journal
+   header="Comment:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   if(!PositionGetString(POSITION_COMMENT, value))
+      return;
+   PrintFormat("%-*s%-s", w, header, value);
+   
+//--- display the position ID in an external system in the journal 
+
+
+--- Page 2294 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2294
+   header="External ID:";
+   w=(header_width==0 ? header.Length()+1 : header_width);
+   if(!PositionGetString(POSITION_EXTERNAL_ID, value))
+      return;
+   PrintFormat("%-*s%-s", w, header, value);
+  }
+See also
+PositionGetSymbol(), PositionSelect(), Position Properties
+
+
+--- Page 2295 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2295
+PositionGetTicket
+The function returns the ticket of a position with the specified index in the list of open positions and
+automatically selects the position to work with using functions PositionGetDouble, PositionGetInteger,
+PositionGetString.
+ulong  PositionGetTicket(
+   int  index      // The number of a position in the list
+   );
+Parameters
+index
+[in]  The index of a position in the list of open positions, numeration starts with 0.
+Return Value
+The ticket of the position. Returns 0 if the function fails.
+Note
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. 
+To ensure receipt of fresh data about a position, it is recommended to call PositionSelect() right
+before referring to them.
+Example:
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- in a loop by all account positions
+   int total=PositionsTotal();
+   for(int i=0; i<total; i++)
+     {
+      //--- get the ticket of the next position by automatically selecting a position 
+      ulong ticket=PositionGetTicket(i);
+      if(ticket==0)
+         continue;
+      
+      //--- get the position type and display the description of the selected position
+      string type=(PositionGetInteger(POSITION_TYPE)==POSITION_TYPE ? "Buy" : "Sell");
+      PrintFormat("[%d] Selected position %s #%I64u", i, type, ticket);
+     }
+   /*
+
+
+--- Page 2296 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2296
+   result:
+   [0] Selected position Sell #2810802718
+   [1] Selected position Buy #2810802919
+   */
+  }
+See also
+PositionGetSymbol(), PositionSelect(), Position Properties
+
+
+--- Page 2297 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2297
+OrdersTotal
+Returns the number of current orders.
+int  OrdersTotal();
+Return Value
+Value of the int type.
+Note
+Do not confuse current pending orders with positions, which are also displayed on the "Trade" tab of
+the "Toolbox" of the client terminal. An order is a request to conduct a transaction, while a position
+is a result of one or more deals.
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. 
+Example:
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- get and print in the journal the number of active pending orders on the account
+   int total=OrdersTotal();
+   Print("Number of active pending orders on the account: ", total);
+   /*
+   result:
+   Number of active pending orders on the account: 2
+   */
+  }
+See also
+OrderSelect(), OrderGetTicket(), Order Properties
+
+
+--- Page 2298 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2298
+OrderGetTicket
+Returns ticket of a corresponding order and automatically selects the order for further working with it
+using functions.
+ulong  OrderGetTicket(
+   int  index      // Number in the list of orders
+   );
+Parameters
+index
+[in]  Number of an order in the list of current orders.
+Return Value
+Value of the ulong type. If the function fails, 0 is returned.
+Note
+Do not confuse current pending orders with positions, which are also displayed on the "Trade" tab of
+the "Toolbox" of the client terminal. An order is a request to conduct a transaction, while a position
+is a result of one or more deals.
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. 
+Function OrderGetTicket() copies data about an order into the program environment, and further
+calls of OrderGetDouble(), OrderGetInteger(), OrderGetString() return the earlier copied data. This
+means that the order itself may no longer exist (or its open price, Stop Loss/Take Profit levels or
+expiration has changed), but data of this order still can be obtained. To ensure receipt of fresh data
+about an order, it is recommended to call OrderGetTicket() right before referring to them.
+Example:
+void OnStart()
+  {
+//--- variables for returning values from order properties
+   ulong    ticket;
+   double   open_price;
+   double   initial_volume;
+   datetime time_setup;
+   string   symbol;
+   string   type;
+   long     order_magic;
+   long     positionID;
+//--- number of current pending orders
+   uint     total=OrdersTotal();
+
+
+--- Page 2299 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2299
+//--- go through orders in a loop
+   for(uint i=0;i<total;i++)
+     {
+      //--- return order ticket by its position in the list
+      if((ticket=OrderGetTicket(i))>0)
+        {
+         //--- return order properties
+         open_price    =OrderGetDouble(ORDER_PRICE_OPEN);
+         time_setup    =(datetime)OrderGetInteger(ORDER_TIME_SETUP);
+         symbol        =OrderGetString(ORDER_SYMBOL);
+         order_magic   =OrderGetInteger(ORDER_MAGIC);
+         positionID    =OrderGetInteger(ORDER_POSITION_ID);
+         initial_volume=OrderGetDouble(ORDER_VOLUME_INITIAL);
+         type          =EnumToString(ENUM_ORDER_TYPE(OrderGetInteger(ORDER_TYPE)));
+         //--- prepare and show information about the order
+         printf("#ticket %d %s %G %s at %G was set up at %s",
+                ticket,                 // order ticket
+                type,                   // type
+                initial_volume,         // placed volume
+                symbol,                 // symbol
+                open_price,             // specified open price
+                TimeToString(time_setup)// time of order placing
+                );
+        }
+     }
+//---
+  }
+See also
+OrdersTotal(), OrderSelect(), OrderGetInteger()
+
+
+--- Page 2300 ---
+Trade Functions
+© 2000-2025, MetaQuotes Ltd.
+2300
+OrderSelect
+Selects an order to work with. Returns true if the function has been successfully completed. Returns
+false if the function completion has failed. For more information about an error call GetLastError().
+bool  OrderSelect(
+   ulong   ticket      // Order ticket 
+   );
+Parameters
+ticket
+[in]  Order ticket.
+Return Value
+Value of the bool type.
+Note
+Do not confuse current pending orders with positions, which are also displayed on the "Trade" tab of
+the "Toolbox" of the client terminal.
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. 
+Function OrderSelect() copies data about an order into the program environment, and further calls
+of OrderGetDouble(), OrderGetInteger(), OrderGetString() return the earlier copied data. This
+means that the order itself may no longer exist (or its open price, Stop Loss/Take Profit levels or
+expiration has changed), but data of this order still can be obtained. To ensure receipt of fresh data
+about an order, it is recommended to call OrderSelect() right before referring to them.
+Example:
+#define   EXPERT_MAGIC  123456
+#define   OFFSET        50                      // offset from the current price to pl
+#define   DIRECTION     ORDER_TYPE_BUY_LIMIT    // order type
+#define   VOLUME        1.0                     // volume
+#define   DEVIATION     2                       // allowed deviation from the price
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//-- declare and initialize the trade request, result and variables
+   MqlTradeRequest request={};
+   MqlTradeResult  result ={};

@@ -1,0 +1,53 @@
+{
+  "workers": {
+    "max_workers": 4,
+    "current_workers": 1
+  },
+  "thresholds": {
+    "min_profit_factor": 1.5,
+    "min_secondary_pf": 1.0,
+    "min_pairs_profitable": 3,
+    "max_drawdown_pct": 30.0,
+    "min_trades": 50,
+    "min_win_rate": 40.0
+  },
+  "monte_carlo": {
+    "iterations": 1000,
+    "confidence_min": 70.0,
+    "max_ruin_probability": 5.0,
+    "ruin_threshold_pct": 50.0
+  },
+  "pairs": {
+    "primary": "EURUSD",
+    "secondary": [
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURJPY"
+    ]
+  },
+  "optimization": {
+    "in_sample_ratio": 0.75,
+    "out_sample_ratio": 0.25,
+    "genetic_population": 128,
+    "optimization_criterion": 6
+  },
+  "fixer": {
+    "max_attempts": 5,
+    "use_opus_for_complex": true
+  },
+  "approval": {
+    "autonomous_mode": false,
+    "trusted_fix_patterns": [],
+    "pause_on_improvement": true
+  },
+  "scoring": {
+    "profit_factor": 20.0,
+    "win_rate": 10.0,
+    "max_drawdown": -2.0,
+    "recovery_factor": 15.0,
+    "total_trades": 0.1,
+    "sharpe_ratio": 5.0,
+    "monte_carlo_confidence": 10.0
+  }
+}

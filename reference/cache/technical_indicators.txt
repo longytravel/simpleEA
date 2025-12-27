@@ -1,0 +1,4764 @@
+=== Technical Indicators (Pages 2726-2932) ===
+
+--- Page 2726 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2726
+Technical Indicator Functions
+All functions like iMA, iAC, iMACD, iIchimoku etc. create a copy of the corresponding technical
+indicator in the global cache of the client terminal. If a copy of the indicator with such parameters
+already exists, the new copy is not created, and the counter of references to the existing copy
+increases.
+These functions return the handle of the appropriate copy of the indicator. Further, using this handle,
+you can receive data calculated by the corresponding indicator. The corresponding buffer data
+(technical indicators contain calculated data in their internal buffers, which can vary from 1 to 5,
+depending on the indicator) can be copied to a mql5-program using the CopyBuffer() function.
+You can't refer to the indicator data right after it has been created, because calculation of indicator
+values requires some time, so it's better to create indicator handles in OnInit(). Function iCustom()
+creates the corresponding custom indicator, and returns its handle in case it is successfully create.
+Custom indicators can contain up to 512 indicator buffers, the contents of which can also be obtained
+by the CopyBuffer() function, using the obtained handle.
+There is a universal method for creating any technical indicator using the IndicatorCreate() function.
+This function accepts the following data as input parameters:
+· symbol name;
+· timeframe;
+· type of the indicator to create;
+· number of input parameters of the indicator;
+· an array of MqlParam type containing all the necessary input parameters.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Note. Repeated call of the indicator function with the same parameters within one mql5-program does
+not lead to a multiple increase of the reference counter; the counter will be increased only once by 1.
+However, it's recommended to get the indicators handles in function OnInit() or in the class
+constructor, and further use these handles in other functions. The reference counter decreases when a
+mql5-program is deinitialized.
+All indicator functions have at least 2 parameters - symbol and period. The NULL value of the symbol
+means the current symbol, the 0 value of the period means the current timeframe.
+Function
+Returns the handle of the indicator:
+iAC
+Accelerator Oscillator
+iAD
+Accumulation/Distribution
+iADX
+Average Directional Index
+iADXWilder
+Average Directional Index by Welles Wilder
+iAlligator
+Alligator
+iAMA
+Adaptive Moving Average
+
+
+--- Page 2727 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2727
+Function
+Returns the handle of the indicator:
+iAO
+Awesome Oscillator
+iATR
+Average True Range
+iBearsPower
+Bears Power
+iBands
+Bollinger Bands®
+iBullsPower
+Bulls Power
+iCCI
+Commodity Channel Index
+iChaikin
+Chaikin Oscillator
+iCustom
+Custom indicator 
+iDEMA
+Double Exponential Moving Average
+iDeMarker
+DeMarker
+iEnvelopes
+Envelopes
+iForce
+Force Index
+iFractals
+Fractals
+iFrAMA
+Fractal Adaptive Moving Average
+iGator
+Gator Oscillator
+iIchimoku
+Ichimoku Kinko Hyo
+iBWMFI
+Market Facilitation Index by Bill Williams
+iMomentum
+Momentum
+iMFI
+Money Flow Index
+iMA
+Moving Average
+iOsMA
+Moving Average of Oscillator (MACD histogram)
+iMACD
+Moving Averages Convergence-Divergence
+iOBV
+On Balance Volume
+iSAR
+Parabolic Stop And Reverse System
+iRSI
+Relative Strength Index
+iRVI
+Relative Vigor Index
+iStdDev
+Standard Deviation
+iStochastic
+Stochastic Oscillator
+iTEMA
+Triple Exponential Moving Average
+iTriX
+Triple Exponential Moving Averages Oscillator
+
+
+--- Page 2728 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2728
+Function
+Returns the handle of the indicator:
+iWPR
+Williams' Percent Range
+iVIDyA
+Variable Index Dynamic Average
+iVolumes
+Volumes
+
+
+--- Page 2729 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2729
+iAC
+The function creates Accelerator Oscillator in a global cache of the client terminal and returns its
+handle. It has only one buffer.
+int  iAC(
+   string           symbol,     // symbol name
+   ENUM_TIMEFRAMES  period      // period
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES enumeration values, 0 means
+the current timeframe.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                     Demo_iAC.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iAC technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 2
+#property indicator_plots   1
+//--- plotting of iAC
+#property indicator_label1  "iAC"
+#property indicator_type1   DRAW_COLOR_HISTOGRAM
+#property indicator_color1  clrGreen, clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+
+
+--- Page 2730 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2730
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iAC,               // use iAC
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iAC;          // type of the function 
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+//--- indicator buffers
+double iACBuffer[];
+double iACColors[];
+//--- variable for storing the handle of the iAC indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Accelerator Oscillator indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of arrays to indicator buffers
+   SetIndexBuffer(0,iACBuffer,INDICATOR_DATA);
+   SetIndexBuffer(1,iACColors,INDICATOR_COLOR_INDEX);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iAC)
+      handle=iAC(name,period);
+   else
+      handle=IndicatorCreate(name,period,IND_AC);
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+
+
+--- Page 2731 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2731
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iAC indicator for the symbol %s/%s, 
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Accelerator Oscillator indicator is calculated for
+   short_name=StringFormat("iAC(%s/%s)",name,EnumToString(period));
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iAC indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iACBuffer array is greater than the number of values in the iAC ind
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+
+
+--- Page 2732 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2732
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iACBuffer and iACColors arrays with values from the Accelerator Oscilla
+//--- if FillArraysFromBuffer returns false, it means the information is nor ready yet
+   if(!FillArraysFromBuffer(iACBuffer,iACColors,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Accelerator Oscillator indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iAC indicator                 |
+//+------------------------------------------------------------------+
+bool FillArraysFromBuffer(double &values[],        // indicator buffer of Accelerator 
+                          double &color_indexes[], // color buffer (for storing of col
+                          int ind_handle,          // handle of the iAC indicator
+                          int amount               // number of copied values
+                          )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iACBuffer array with values from the indicator buffer that ha
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iAC indicator, error code %d",GetLastE
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- now copy the indexes of colors
+   if(CopyBuffer(ind_handle,1,0,amount,color_indexes)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy color values from the iAC indicator, error code %d",
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+
+
+--- Page 2733 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2733
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2734 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2734
+iAD
+The function returns the handle of the Accumulation/Distribution indicator. It has only one buffer.
+int  iAD(
+   string               symbol,             // symbol name
+   ENUM_TIMEFRAMES      period,             // period
+   ENUM_APPLIED_VOLUME  applied_volume      // volume type for calculation
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES enumeration values, 0 means
+the current timeframe.
+applied_volume
+[in]   The volume used. Can be any of ENUM_APPLIED_VOLUME values.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                     Demo_iAD.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iAD technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- plot iAD
+#property indicator_label1  "iAD"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrLightSeaGreen
+
+
+--- Page 2735 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2735
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iAD,               // use iAD
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iAD;          // type of the function 
+input ENUM_APPLIED_VOLUME  volumes;                // volume used
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+//--- indicator buffer
+double         iADBuffer[];
+//--- variable for storing the handle of the iAD indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Accumulation/Distribution indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iADBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iAD)
+      handle=iAD(name,period,volumes);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+
+
+--- Page 2736 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2736
+      MqlParam pars[1];
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=volumes;
+      handle=IndicatorCreate(name,period,IND_AD,1,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iAD indicator for the symbol %s/%s, 
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Accumulation/Distribution indicator is calculated 
+   short_name=StringFormat("iAD(%s/%s)",name,EnumToString(period));
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator  
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iAD indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+
+
+--- Page 2737 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2737
+      //--- if the iADBuffer array is greater than the number of values in the iAD ind
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iADBuffer array with values of the Accumulation/Distribution indicator
+//--- if FillArraysFromBuffer returns false, it means the information is nor ready yet
+   if(!FillArrayFromBuffer(iADBuffer,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Accumulation/Distribution indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iAD indicator                 |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],   // indicator buffer of the Accumulation/D
+                          int ind_handle,    // handle of the iAD indicator
+                          int amount         // number of copied values
+                          )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iADBuffer array with values from the indicator buffer that ha
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iAD indicator, error code %d",GetLastE
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }  
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+
+
+--- Page 2738 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2738
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2739 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2739
+iADX
+The function returns the handle of the Average Directional Movement Index indicator.
+int  iADX(
+   string           symbol,         // symbol name
+   ENUM_TIMEFRAMES  period,         // period
+   int              adx_period      // averaging period
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+adx_period
+[in]  Period to calculate the index.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Note
+The buffer numbers are the following: 0 - MAIN_LINE, 1 - PLUSDI_LINE, 2 - MINUSDI_LINE.
+Example:
+//+------------------------------------------------------------------+
+//|                                                    Demo_iADX.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iADX technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 3
+#property indicator_plots   3
+
+
+--- Page 2740 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2740
+//--- plot ADX
+#property indicator_label1  "ADX"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrLightSeaGreen
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- plot DI_plus
+#property indicator_label2  "DI_plus"
+#property indicator_type2   DRAW_LINE
+#property indicator_color2  clrYellowGreen
+#property indicator_style2  STYLE_SOLID
+#property indicator_width2  1
+//--- plot DI_minus
+#property indicator_label3  "DI_minus"
+#property indicator_type3   DRAW_LINE
+#property indicator_color3  clrWheat
+#property indicator_style3  STYLE_SOLID
+#property indicator_width3  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iADX,              // use iADX
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iADX;         // type of the function 
+input int                  adx_period=14;          // period of calculation
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+//--- indicator buffers
+double         ADXBuffer[];
+double         DI_plusBuffer[];
+double         DI_minusBuffer[];
+//--- variable for storing the handle of the iADX indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Average Directional Movement Index indi
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of arrays to indicator buffers
+
+
+--- Page 2741 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2741
+   SetIndexBuffer(0,ADXBuffer,INDICATOR_DATA);
+   SetIndexBuffer(1,DI_plusBuffer,INDICATOR_DATA);
+   SetIndexBuffer(2,DI_minusBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iADX)
+      handle=iADX(name,period,adx_period);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[1];
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=adx_period;
+      handle=IndicatorCreate(name,period,IND_ADX,1,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iADX indicator for the symbol %s/%s,
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Average Directional Movement Index indicator is ca
+   short_name=StringFormat("iADX(%s/%s period=%d)",name,EnumToString(period),adx_perio
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator    
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+
+
+--- Page 2742 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2742
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iADX indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iADXBuffer array is greater than the number of values in the iADX i
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the array with values of the Average Directional Movement Index indicator
+//--- if FillArraysFromBuffer returns false, it means the information is nor ready yet
+   if(!FillArraysFromBuffers(ADXBuffer,DI_plusBuffer,DI_minusBuffer,handle,values_to_c
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Average Directional Movement Index indicato
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iADX indicator                |
+//+------------------------------------------------------------------+
+
+
+--- Page 2743 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2743
+bool FillArraysFromBuffers(double &adx_values[],      // indicator buffer of the ADX l
+                           double &DIplus_values[],   // indicator buffer for DI+
+                           double &DIminus_values[],  // indicator buffer for DI-
+                           int ind_handle,            // handle of the iADX indicator
+                           int amount                 // number of copied values
+                           )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iADXBuffer array with values from the indicator buffer that h
+   if(CopyBuffer(ind_handle,0,0,amount,adx_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iADX indicator, error code %d",GetLast
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- fill a part of the DI_plusBuffer array with values from the indicator buffer tha
+   if(CopyBuffer(ind_handle,1,0,amount,DIplus_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iADX indicator, error code %d",GetLast
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- fill a part of the DI_minusBuffer array with values from the indicator buffer th
+   if(CopyBuffer(ind_handle,2,0,amount,DIminus_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iADX indicator, error code %d",GetLast
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2744 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2744
+iADXWilder
+The function returns the handle of Average Directional Movement Index by Welles Wilder.
+int  iADXWilder(
+   string           symbol,         // symbol name
+   ENUM_TIMEFRAMES  period,         // period
+   int              adx_period      // averaging period
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+adx_period
+[in]  Period to calculate the index.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Note
+The buffer numbers are the following: 0 - MAIN_LINE, 1 - PLUSDI_LINE, 2 - MINUSDI_LINE.
+Example:
+//+------------------------------------------------------------------+
+//|                                                   iADXWilder.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iADXWilder technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 3
+#property indicator_plots   3
+
+
+--- Page 2745 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2745
+//--- plot ADX
+#property indicator_label1  "ADX"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrLightSeaGreen
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- plot DI_plus
+#property indicator_label2  "DI_plus"
+#property indicator_type2   DRAW_LINE
+#property indicator_color2  clrYellowGreen
+#property indicator_style2  STYLE_SOLID
+#property indicator_width2  1
+//--- plot DI_minus
+#property indicator_label3  "DI_minus"
+#property indicator_type3   DRAW_LINE
+#property indicator_color3  clrWheat
+#property indicator_style3  STYLE_SOLID
+#property indicator_width3  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iADXWilder,        // use iADXWilder
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iADXWilder;   // type of the function 
+input int                  adx_period=14;          // period of calculation
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+//--- indicator buffers
+double         ADXBuffer[];
+double         DI_plusBuffer[];
+double         DI_minusBuffer[];
+//--- variable for storing the handle of the iADXWilder indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Average Directional Movement Index by W
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of arrays to indicator buffers
+
+
+--- Page 2746 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2746
+   SetIndexBuffer(0,ADXBuffer,INDICATOR_DATA);
+   SetIndexBuffer(1,DI_plusBuffer,INDICATOR_DATA);
+   SetIndexBuffer(2,DI_minusBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iADXWilder)
+      handle=iADXWilder(name,period,adx_period);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[1];
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=adx_period;
+      handle=IndicatorCreate(name,period,IND_ADXW,1,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iADXWilder indicator for the symbol 
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Average Directional Movement Index by Welles Wilde
+   short_name=StringFormat("iADXWilder(%s/%s period=%d)",name,EnumToString(period),adx
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator    
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+
+
+--- Page 2747 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2747
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iADXWilder indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iADXBuffer array is greater than the number of values in the iADXWi
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the array with values of the Average Directional Movement Index by Welles W
+//--- if FillArraysFromBuffer returns false, it means the information is nor ready yet
+   if(!FillArraysFromBuffers(ADXBuffer,DI_plusBuffer,DI_minusBuffer,handle,values_to_c
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Average Directional Movement Index indicato
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iADXWilder indicator          |
+//+------------------------------------------------------------------+
+
+
+--- Page 2748 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2748
+bool FillArraysFromBuffers(double &adx_values[],      // indicator buffer of the ADX l
+                           double &DIplus_values[],   // indicator buffer for DI+
+                           double &DIminus_values[],  // indicator buffer for DI-
+                           int ind_handle,            // handle of the iADXWilder indi
+                           int amount                 // number of copied values
+                           )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iADXBuffer array with values from the indicator buffer that h
+   if(CopyBuffer(ind_handle,0,0,amount,adx_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iADXWilder indicator, error code %d",G
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- fill a part of the DI_plusBuffer array with values from the indicator buffer tha
+   if(CopyBuffer(ind_handle,1,0,amount,DIplus_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iADXWilder indicator, error code %d",G
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- fill a part of the DI_plusBuffer array with values from the indicator buffer tha
+   if(CopyBuffer(ind_handle,2,0,amount,DIminus_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iADXWilder indicator, error code %d",G
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2749 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2749
+iAlligator
+The function returns the handle of the Alligator indicator.
+int  iAlligator(
+   string              symbol,            // symbol name
+   ENUM_TIMEFRAMES     period,            // period
+   int                 jaw_period,        // period for the calculation of jaws
+   int                 jaw_shift,         // horizontal shift of jaws
+   int                 teeth_period,      // period for the calculation of teeth
+   int                 teeth_shift,       // horizontal shift of teeth
+   int                 lips_period,       // period for the calculation of lips
+   int                 lips_shift,        // horizontal shift of lips
+   ENUM_MA_METHOD      ma_method,         // type of smoothing
+   ENUM_APPLIED_PRICE  applied_price      // type of price or handle
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+jaw_period
+[in]  Averaging period for the blue line (Alligator's Jaw)
+jaw_shift
+[in] The shift of the blue line relative to the price chart. 
+teeth_period
+[in]   Averaging period for the red line (Alligator's Teeth).
+teeth_shift
+[in] The shift of the red line relative to the price chart.
+lips_period
+[in]  Averaging period for the green line (Alligator's lips).
+lips_shift
+[in] The shift of the green line relative to the price chart.
+ma_method
+[in]  The method of averaging. Can be any of the ENUM_MA_METHOD values.
+applied_price
+[in]  The price used. Can be any of the price constants ENUM_APPLIED_PRICE or a handle of
+another indicator.
+
+
+--- Page 2750 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2750
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Note
+The buffer numbers are the following: 0 - GATORJAW_LINE, 1 - GATORTEETH_LINE, 2 -
+GATORLIPS_LINE.
+Example:
+//+------------------------------------------------------------------+
+//|                                              Demo_iAlligator.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iAlligator technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property description "All the other parameters are similar to the standard Alligator.
+#property indicator_chart_window
+#property indicator_buffers 3
+#property indicator_plots   3
+//--- plot Jaws
+#property indicator_label1  "Jaws"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrBlue
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- plot Teeth
+#property indicator_label2  "Teeth"
+#property indicator_type2   DRAW_LINE
+#property indicator_color2  clrRed
+#property indicator_style2  STYLE_SOLID
+#property indicator_width2  1
+//--- plot Lips
+#property indicator_label3  "Lips"
+#property indicator_type3   DRAW_LINE
+#property indicator_color3  clrLime
+#property indicator_style3  STYLE_SOLID
+#property indicator_width3  1
+//+------------------------------------------------------------------+
+
+
+--- Page 2751 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2751
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iAlligator,        // use iAlligator
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iAlligator;   // type of the function 
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+input int                  jaw_period=13;          // period of the Jaw line
+input int                  jaw_shift=8;            // shift of the Jaw line
+input int                  teeth_period=8;         // period of the Teeth line
+input int                  teeth_shift=5;          // shift of the Teeth line
+input int                  lips_period=5;          // period of the Lips line
+input int                  lips_shift=3;           // shift of the Lips line
+input ENUM_MA_METHOD       MA_method=MODE_SMMA;    // method of averaging of the Allig
+input ENUM_APPLIED_PRICE   applied_price=PRICE_MEDIAN;// type of price used for calcul
+//--- indicator buffers
+double         JawsBuffer[];
+double         TeethBuffer[];
+double         LipsBuffer[];
+//--- variable for storing the handle of the iAlligator indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Alligator indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of arrays to indicator buffers
+   SetIndexBuffer(0,JawsBuffer,INDICATOR_DATA);
+   SetIndexBuffer(1,TeethBuffer,INDICATOR_DATA);
+   SetIndexBuffer(2,LipsBuffer,INDICATOR_DATA);
+//--- set shift of each line
+   PlotIndexSetInteger(0,PLOT_SHIFT,jaw_shift);
+   PlotIndexSetInteger(1,PLOT_SHIFT,teeth_shift);
+   PlotIndexSetInteger(2,PLOT_SHIFT,lips_shift);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+
+
+--- Page 2752 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2752
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iAlligator)
+      handle=iAlligator(name,period,jaw_period,jaw_shift,teeth_period,
+                        teeth_shift,lips_period,lips_shift,MA_method,applied_price);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[8];
+     //--- periods and shifts of the Alligator lines
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=jaw_period;
+      pars[1].type=TYPE_INT;
+      pars[1].integer_value=jaw_shift;
+      pars[2].type=TYPE_INT;
+      pars[2].integer_value=teeth_period;
+      pars[3].type=TYPE_INT;
+      pars[3].integer_value=teeth_shift;
+      pars[4].type=TYPE_INT;
+      pars[4].integer_value=lips_period;
+      pars[5].type=TYPE_INT;
+      pars[5].integer_value=lips_shift;
+//--- type of smoothing
+      pars[6].type=TYPE_INT;
+      pars[6].integer_value=MA_method;
+//--- type of price
+      pars[7].type=TYPE_INT;
+      pars[7].integer_value=applied_price;
+//--- create handle
+      handle=IndicatorCreate(name,period,IND_ALLIGATOR,8,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iAlligator indicator for the symbol 
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Alligator indicator is calculated for
+   short_name=StringFormat("iAlligator(%s/%s, %d,%d,%d,%d,%d,%d)",name,EnumToString(pe
+
+
+--- Page 2753 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2753
+                           jaw_period,jaw_shift,teeth_period,teeth_shift,lips_period,l
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator    
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iAlligator indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the JawsBuffer array is greater than the number of values in the iAllig
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the arrays with values of the Alligator indicator
+//--- if FillArraysFromBuffer returns false, it means the information is nor ready yet
+   if(!FillArraysFromBuffers(JawsBuffer,jaw_shift,TeethBuffer,teeth_shift,LipsBuffer,l
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+
+
+--- Page 2754 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2754
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Alligator indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }  
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iAlligator indicator          |
+//+------------------------------------------------------------------+
+bool FillArraysFromBuffers(double &jaws_buffer[],  // indicator buffer for the Jaw lin
+                           int j_shift,            // shift of the Jaw line
+                           double &teeth_buffer[], // indicator buffer for the Teeth l
+                           int t_shift,            // shift of the Teeth line
+                           double &lips_buffer[],  // indicator buffer for the Lips li
+                           int l_shift,            // shift of the Lips line
+                           int ind_handle,         // handle of the iAlligator indicat
+                           int amount              // number of copied values
+                           )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the JawsBuffer array with values from the indicator buffer that h
+   if(CopyBuffer(ind_handle,0,-j_shift,amount,jaws_buffer)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iAlligator indicator, error code %d",G
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- fill a part of the TeethBuffer array with values from the indicator buffer that 
+   if(CopyBuffer(ind_handle,1,-t_shift,amount,teeth_buffer)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iAlligator indicator, error code %d",G
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- fill a part of the LipsBuffer array with values from the indicator buffer that h
+   if(CopyBuffer(ind_handle,2,-l_shift,amount,lips_buffer)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iAlligator indicator, error code %d",G
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+
+
+--- Page 2755 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2755
+     }
+//--- everything is fine
+   return(true);
+  }  
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2756 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2756
+iAMA
+The function returns the handle of the Adaptive Moving Average indicator. It has only one buffer.
+int  iAMA(
+   string              symbol,             // symbol name
+   ENUM_TIMEFRAMES     period,             // period
+   int                 ama_period,         // average period for AMA
+   int                 fast_ma_period,     // fast MA period
+   int                 slow_ma_period,     // slow MA period
+   int                 ama_shift,          // horizontal shift of the indicator
+   ENUM_APPLIED_PRICE  applied_price       // type of the price or handle
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ama_period
+[in]  The calculation period, on which the efficiency coefficient is calculated.
+fast_ma_period
+[in]  Fast period for the smoothing coefficient calculation for a rapid market.
+slow_ma_period
+[in]  Slow period for the smoothing coefficient calculation in the absence of trend.
+ama_shift
+[in]  Shift of the indicator relative to the price chart.
+applied_price
+[in]  The price used. Can be any of the price constants ENUM_APPLIED_PRICE or a handle of
+another indicator.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                    Demo_iAMA.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+
+
+--- Page 2757 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2757
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iAMA technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property description "All the other parameters are similar to the standard AMA."
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- plot iAMA
+#property indicator_label1  "iAMA"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iAMA,              // use iAMA
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iAMA;          // type of the function 
+input string               symbol=" ";              // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;   // timeframe
+input int                  ama_period=15;           // period of calculation
+input int                  fast_ma_period=2;        // period of fast MA
+input int                  slow_ma_period=30;       // period of slow MA
+input int                  ama_shift=0;             // horizontal shift
+input ENUM_APPLIED_PRICE   applied_price;           // type of price
+//--- indicator buffer
+double         iAMABuffer[];
+//--- variable for storing the handle of the iAMA indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Adaptive Moving Average indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+
+
+--- Page 2758 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2758
+int OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,iAMABuffer,INDICATOR_DATA);
+//--- set shift
+   PlotIndexSetInteger(0,PLOT_SHIFT,ama_shift);   
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iAMA)
+      handle=iAMA(name,period,ama_period,fast_ma_period,slow_ma_period,ama_shift,appli
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[5];
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=ama_period;
+      pars[1].type=TYPE_INT;
+      pars[1].integer_value=fast_ma_period;
+      pars[2].type=TYPE_INT;
+      pars[2].integer_value=slow_ma_period;
+      pars[3].type=TYPE_INT;
+      pars[3].integer_value=ama_shift;
+      //--- type of price
+      pars[4].type=TYPE_INT;
+      pars[4].integer_value=applied_price;
+      handle=IndicatorCreate(name,period,IND_AMA,5,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iAMA indicator for the symbol %s/%s,
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Adaptive Moving Average indicator is calculated fo
+
+
+--- Page 2759 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2759
+   short_name=StringFormat("iAMA(%s/%s,%d,%d,%d,d)",name,EnumToString(period),ama_peri
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator    
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iAMA indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iAMABuffer array is greater than the number of values in the iAMA i
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the arrays with values of the Adaptive Moving Average indicator
+//--- if FillArraysFromBuffer returns false, it means the information is nor ready yet
+   if(!FillArrayFromBuffer(iAMABuffer,ama_shift,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+
+
+--- Page 2760 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2760
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Adaptive Moving Average indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffer from the iAMA indicator                 |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &ama_buffer[],  // indicator buffer of the AMA line
+                         int a_shift,           // shift of the AMA line
+                         int ind_handle,        // handle of the iAMA indicator
+                         int amount             // number of copied values
+                         )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iAMABuffer array with values from the indicator buffer that h
+   if(CopyBuffer(ind_handle,0,-a_shift,amount,ama_buffer)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iAMA indicator, error code %d",GetLast
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2761 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2761
+iAO
+The function returns the handle of the Awesome Oscillator indicator. It has only one buffer.
+int  iAO(
+   string           symbol,     // symbol name
+   ENUM_TIMEFRAMES  period      // period
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                     Demo_iAO.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iAO technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 2
+#property indicator_plots   1
+//--- the iAO plot
+#property indicator_label1  "iAO"
+#property indicator_type1   DRAW_COLOR_HISTOGRAM
+#property indicator_color1  clrGreen,clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+
+
+--- Page 2762 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2762
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iAO,               // use iAO
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iAO;          // type of the function 
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+//--- indicator buffers
+double         iAOBuffer[];
+double         iAOColors[];
+//--- variable for storing the handle of the iAO indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Awesome Oscillator indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of arrays to indicator buffers
+   SetIndexBuffer(0,iAOBuffer,INDICATOR_DATA);
+   SetIndexBuffer(1,iAOColors,INDICATOR_COLOR_INDEX);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iAO)
+      handle=iAO(name,period);
+   else
+      handle=IndicatorCreate(name,period,IND_AO);
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+
+
+--- Page 2763 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2763
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iAO indicator for the symbol %s/%s, 
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Awesome Oscillator indicator is calculated for
+   short_name=StringFormat("iAO(%s/%s)",name,EnumToString(period));
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iAO indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iAOBuffer array is greater than the number of values in the iAO ind
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+
+
+--- Page 2764 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2764
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iAOBuffer and iAOColors arrays with values from the Awesome Oscillator 
+//--- if FillArraysFromBuffer returns false, it means the information is nor ready yet
+   if(!FillArraysFromBuffer(iAOBuffer,iAOColors,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Awesome Oscillator indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iAO indicator                 |
+//+------------------------------------------------------------------+
+bool FillArraysFromBuffer(double &values[],        // indicator buffer of Awesome Osci
+                          double &color_indexes[], // color buffer (for storing of col
+                          int ind_handle,          // handle of the iAO indicator
+                          int amount               // number of copied values
+                          )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iAOBuffer array with values from the indicator buffer that ha
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iAO indicator, error code %d",GetLastE
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- now copy the indexes of colors
+   if(CopyBuffer(ind_handle,1,0,amount,color_indexes)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy color values from the iAO indicator, error code %d",
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 2765 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2765
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2766 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2766
+iATR
+The function returns the handle of the Average True Range indicator. It has only one buffer.
+int  iATR(
+   string           symbol,        // symbol name
+   ENUM_TIMEFRAMES  period,        // period
+   int              ma_period      // averaging period 
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ma_period
+[in]  The value of the averaging period for the indicator calculation.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                    Demo_iATR.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iATR technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- plot iATR
+#property indicator_label1  "iATR"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrLightSeaGreen
+
+
+--- Page 2767 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2767
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iATR,// use iATR
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input int                  atr_period=14;          // period of calculation
+input Creation             type=Call_iATR;         // type of the function 
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+//--- indicator buffer
+double         iATRBuffer[];
+//--- variable for storing the handle of the iAC indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Average True Range indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iATRBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iATR)
+      handle=iATR(name,period,atr_period);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+
+
+--- Page 2768 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2768
+      MqlParam pars[1];
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=atr_period;
+      handle=IndicatorCreate(name,period,IND_ATR,1,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iATR indicator for the symbol %s/%s,
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Average True Range indicator is calculated for
+   short_name=StringFormat("iATR(%s/%s, period=%d)",name,EnumToString(period),atr_peri
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iATR indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+
+
+--- Page 2769 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2769
+      //--- if the iATRBuffer array is greater than the number of values in the iATR i
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iATRBuffer array with values of the Average True Range indicator
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArrayFromBuffer(iATRBuffer,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Average True Range indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iATR indicator                |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],  // indicator buffer for ATR values
+                         int ind_handle,    // handle of the iATR indicator
+                         int amount         // number of copied values
+                         )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iATRBuffer array with values from the indicator buffer that h
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iATR indicator, error code %d",GetLast
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+
+
+--- Page 2770 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2770
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2771 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2771
+iBearsPower
+The function returns the handle of the Bears Power indicator. It has only one buffer.
+int  iBearsPower(
+   string              symbol,            // symbol name
+   ENUM_TIMEFRAMES     period,            // period
+   int                 ma_period,         // averaging period
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ma_period
+[in]  The value of the averaging period for the indicator calculation.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                             Demo_iBearsPower.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iBearsPower technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- the iBearsPower plot
+#property indicator_label1  "iBearsPower"
+#property indicator_type1   DRAW_HISTOGRAM
+#property indicator_color1  clrSilver
+
+
+--- Page 2772 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2772
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iBearsPower,       // use iBearsPower
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iBearsPower;  // type of the function 
+input int                  ma_period=13;           // period of moving average
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+//--- indicator buffer
+double         iBearsPowerBuffer[];
+//--- variable for storing the handle of the iBearsPower indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Bears Power indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iBearsPowerBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iBearsPower)
+      handle=iBearsPower(name,period,ma_period);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+
+
+--- Page 2773 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2773
+      MqlParam pars[1];
+      //--- period of ma      
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=ma_period;
+      handle=IndicatorCreate(name,period,IND_BEARS,1,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iBearsPower indicator for the symbol
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Bears Power indicator is calculated for
+   short_name=StringFormat("iBearsPower(%s/%s, period=%d)",name,EnumToString(period),m
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iBearsPower indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+
+
+--- Page 2774 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2774
+     {
+      //--- if the iBearsPowerBuffer array is greater than the number of values in the
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iBearsPowerBuffer array with values of the Bears Power indicator
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArrayFromBuffer(iBearsPowerBuffer,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Bears Power indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iBearsPower indicator         |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],  // indicator buffer for Bears Power values
+                         int ind_handle,    // handle of the iBearsPower indicator
+                         int amount         // number of copied values
+                         )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iBearsPowerBuffer array with values from the indicator buffer
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iBearsPower indicator, error code %d",
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 2775 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2775
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2776 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2776
+iBands
+The function returns the handle of the Bollinger Bands® indicator.
+int  iBands(
+   string              symbol,            // symbol name
+   ENUM_TIMEFRAMES     period,            // period
+   int                 bands_period,      // period for average line calculation
+   int                 bands_shift,       // horizontal shift of the indicator
+   double              deviation,         // number of standard deviations
+   ENUM_APPLIED_PRICE  applied_price      // type of price or handle
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+bands_period
+[in]  The averaging period of the main line of the indicator.
+bands_shift
+[in] The shift the indicator relative to the price chart.
+deviation
+[in]  Deviation from the main line.
+applied_price
+[in]  The price used. Can be any of the price constants ENUM_APPLIED_PRICE or a handle of
+another indicator.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Note
+The buffer numbers are the following: 0 - BASE_LINE, 1 - UPPER_BAND, 2 - LOWER_BAND
+Example:
+//+------------------------------------------------------------------+
+//|                                                  Demo_iBands.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+
+
+--- Page 2777 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2777
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iBands technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_chart_window
+#property indicator_buffers 3
+#property indicator_plots   3
+//--- the Upper plot
+#property indicator_label1  "Upper"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrMediumSeaGreen
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- the Lower plot
+#property indicator_label2  "Lower"
+#property indicator_type2   DRAW_LINE
+#property indicator_color2  clrMediumSeaGreen
+#property indicator_style2  STYLE_SOLID
+#property indicator_width2  1
+//--- the Middle plot
+#property indicator_label3  "Middle"
+#property indicator_type3   DRAW_LINE
+#property indicator_color3  clrMediumSeaGreen
+#property indicator_style3  STYLE_SOLID
+#property indicator_width3  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iBands,            // use iBands
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iBands;          // type of the function 
+input int                  bands_period=20;           // period of moving average
+input int                  bands_shift=0;             // shift
+input double               deviation=2.0;             // number of standard deviations
+input ENUM_APPLIED_PRICE   applied_price=PRICE_CLOSE; // type of price
+input string               symbol=" ";                // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;     // timeframe
+//--- indicator buffers
+double         UpperBuffer[];
+double         LowerBuffer[];
+
+
+--- Page 2778 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2778
+double         MiddleBuffer[];
+//--- variable for storing the handle of the iBands indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Bollinger Bands indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of arrays to indicator buffers
+   SetIndexBuffer(0,UpperBuffer,INDICATOR_DATA);
+   SetIndexBuffer(1,LowerBuffer,INDICATOR_DATA);
+   SetIndexBuffer(2,MiddleBuffer,INDICATOR_DATA);
+//--- set shift of each line
+   PlotIndexSetInteger(0,PLOT_SHIFT,bands_shift);
+   PlotIndexSetInteger(1,PLOT_SHIFT,bands_shift);      
+   PlotIndexSetInteger(2,PLOT_SHIFT,bands_shift);      
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iBands)
+      handle=iBands(name,period,bands_period,bands_shift,deviation,applied_price);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[4];
+      //--- period of ma
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=bands_period;
+      //--- shift
+      pars[1].type=TYPE_INT;
+      pars[1].integer_value=bands_shift;
+      //--- number of standard deviation
+      pars[2].type=TYPE_DOUBLE;
+      pars[2].double_value=deviation;
+
+
+--- Page 2779 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2779
+      //--- type of price
+      pars[3].type=TYPE_INT;
+      pars[3].integer_value=applied_price;
+      handle=IndicatorCreate(name,period,IND_BANDS,4,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iBands indicator for the symbol %s/%
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Bollinger Bands indicator is calculated for
+   short_name=StringFormat("iBands(%s/%s, %d,%d,%G,%s)",name,EnumToString(period),
+                           bands_period,bands_shift,deviation,EnumToString(applied_pri
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator  
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iBands indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+
+
+--- Page 2780 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2780
+     {
+      //--- if the size of indicator buffers is greater than the number of values in t
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the array with values of the Bollinger Bands indicator
+//--- if FillArraysFromBuffer returns false, it means the information is nor ready yet
+   if(!FillArraysFromBuffers(MiddleBuffer,UpperBuffer,LowerBuffer,bands_shift,handle,v
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Bollinger Bands indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iBands indicator              |
+//+------------------------------------------------------------------+
+bool FillArraysFromBuffers(double &base_values[],     // indicator buffer of the middl
+                           double &upper_values[],    // indicator buffer of the upper
+                           double &lower_values[],    // indicator buffer of the lower
+                           int shift,                 // shift
+                           int ind_handle,            // handle of the iBands indicato
+                           int amount                 // number of copied values
+                           )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the MiddleBuffer array with values from the indicator buffer that
+   if(CopyBuffer(ind_handle,0,-shift,amount,base_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iBands indicator, error code %d",GetLa
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+
+
+--- Page 2781 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2781
+//--- fill a part of the UpperBuffer array with values from the indicator buffer that 
+   if(CopyBuffer(ind_handle,1,-shift,amount,upper_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iBands indicator, error code %d",GetLa
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- fill a part of the LowerBuffer array with values from the indicator buffer that 
+   if(CopyBuffer(ind_handle,2,-shift,amount,lower_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iBands indicator, error code %d",GetLa
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2782 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2782
+iBullsPower
+The function returns the handle of the Bulls Power indicator. It has only one buffer.
+int  iBullsPower(
+   string              symbol,            // symbol name
+   ENUM_TIMEFRAMES     period,            // period
+   int                 ma_period,         // averaging period
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ma_period
+[in]  The averaging period for the indicator calculation.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                             Demo_iBullsPower.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iBullsPower technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- the iBullsPower plot
+#property indicator_label1  "iBullsPower"
+#property indicator_type1   DRAW_HISTOGRAM
+#property indicator_color1  clrSilver
+
+
+--- Page 2783 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2783
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iBullsPower,       // use iBullsPower
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iBullsPower;  // type of the function 
+input int                  ma_period=13;           // period of moving average
+input string               symbol=" ";             // symbol
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;  // timeframe
+//--- indicator buffer
+double         iBullsPowerBuffer[];
+//--- variable for storing the handle of the iBullsPower indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Bulls Power indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iBullsPowerBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iBullsPower)
+      handle=iBullsPower(name,period,ma_period);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+
+
+--- Page 2784 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2784
+      MqlParam pars[1];
+      //--- period of ma
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=ma_period;
+      handle=IndicatorCreate(name,period,IND_BULLS,1,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iBullsPower indicator for the symbol
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Bulls Power indicator is calculated for
+   short_name=StringFormat("iBullsPower(%s/%s, period=%d)",name,EnumToString(period),m
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iBullsPower indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+
+
+--- Page 2785 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2785
+     {
+      //--- if the iBullsPowerBuffer array is greater than the number of values in the
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iBullsPowerBuffer array with values of the Bulls Power indicator
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArrayFromBuffer(iBullsPowerBuffer,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Bulls Power indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iBullsPower indicator         |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],  // indicator buffer of Bulls Power values
+                         int ind_handle,    // handle of the iBullsPower indicator
+                         int amount         // number of copied values
+                         )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iBullsPowerBuffer array with values from the indicator buffer
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iBullsPower indicator, error code %d",
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 2786 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2786
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 2787 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2787
+iCCI
+The function returns the handle of the Commodity Channel Index indicator. It has only one buffer.
+int  iCCI(
+   string              symbol,            // symbol name
+   ENUM_TIMEFRAMES     period,            // period
+   int                 ma_period,         // averaging period
+   ENUM_APPLIED_PRICE  applied_price      // type of price or handle
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ma_period
+[in]   The averaging period for the indicator calculation.
+applied_price
+[in]  The price used. Can be any of the price constants ENUM_APPLIED_PRICE or a handle of
+another indicator.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                    Demo_iCCI.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iCCI technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 1
+
+
+--- Page 2788 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2788
+#property indicator_plots   1
+//--- the iCCI plot
+#property indicator_label1  "iCCI"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrLightSeaGreen
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- horizontal levels in the indicator window
+#property indicator_level1  -100.0
+#property indicator_level2  100.0
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iCCI,              // use iCCI
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iCCI;               // type of the function
+input int                  ma_period=14;                 // period of moving average
+input ENUM_APPLIED_PRICE   applied_price=PRICE_TYPICAL;  // type of price
+input string               symbol=" ";                   // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;        // timeframe
+//--- indicator buffer
+double         iCCIBuffer[];
+//--- variable for storing the handle of the iCCI indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Commodity Channel Index indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iCCIBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+
+
+--- Page 2789 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2789
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iCCI)
+      handle=iCCI(name,period,ma_period,applied_price);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[2];
+      //--- period of moving average
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=ma_period;
+      //--- type of price
+      pars[1].type=TYPE_INT;
+      pars[1].integer_value=applied_price;
+      handle=IndicatorCreate(name,period,IND_CCI,2,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iCCI indicator for the symbol %s/%s,
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the CCI indicator is calculated for
+   short_name=StringFormat("iCCI(%s/%s, %d, %s)",name,EnumToString(period),
+                           ma_period,EnumToString(applied_price));
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator  
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+
+
+--- Page 2790 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2790
+  {
+//--- number of values copied from the iCCI indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iCCIBuffer array is greater than the number of values in the iCCI i
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iCCIBuffer array with values of the Commodity Channel Index indicator
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArrayFromBuffer(iCCIBuffer,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Commodity Channel Index indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iCCI indicator                |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],  // indicator buffer of Commodity Channel I
+                         int ind_handle,    // handle of the iCCI indicator
+                         int amount         // number of copied values
+                         )
+  {
+//--- reset error code
+
+
+--- Page 2791 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2791
+   ResetLastError();
+//--- fill a part of the iCCIBuffer array with values from the indicator buffer that h
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iCCI indicator, error code %d",GetLast
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2792 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2792
+iChaikin
+The function returns the handle of the Chaikin Oscillator indicator. It has only one buffer.
+int  iChaikin(
+   string               symbol,             // symbol name
+   ENUM_TIMEFRAMES      period,             // period
+   int                  fast_ma_period,     // fast period
+   int                  slow_ma_period,     // slow period
+   ENUM_MA_METHOD       ma_method,          // smoothing type
+   ENUM_APPLIED_VOLUME  applied_volume      // type of volume
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+fast_ma_period
+[in] Fast averaging period for calculations.
+slow_ma_period
+[in] Slow averaging period for calculations.
+ma_method
+[in]  Smoothing type. Can be one of the averaging constants of ENUM_MA_METHOD.
+applied_volume
+[in]  The volume used. Can be one of the constants of ENUM_APPLIED_VOLUME.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                Demo_iChaikin.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+
+
+--- Page 2793 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2793
+#property description "of indicator buffers for the iChaikin technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- the iChaikin plot
+#property indicator_label1  "iChaikin"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrLightSeaGreen
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iChaikin,          // use iChaikin
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iChaikin;           // type of the function 
+input int                  fast_ma_period=3;             // period of fast ma
+input int                  slow_ma_period=10;            // period of slow ma
+input ENUM_MA_METHOD       ma_method=MODE_EMA;           // type of smoothing
+input ENUM_APPLIED_VOLUME  applied_volume=VOLUME_TICK;   // type of volume
+input string               symbol=" ";                   // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;        // timeframe
+//--- indicator buffer
+double         iChaikinBuffer[];
+//--- variable for storing the handle of the iChaikin indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Chaikin Oscillator indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iChaikinBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+
+
+--- Page 2794 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2794
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iChaikin)
+      handle=iChaikin(name,period,fast_ma_period,slow_ma_period,ma_method,applied_volu
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[4];
+      //--- period of fast ma 
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=fast_ma_period;
+      //--- period of slow ma
+      pars[1].type=TYPE_INT;
+      pars[1].integer_value=slow_ma_period;
+      //--- type of smoothing
+      pars[2].type=TYPE_INT;
+      pars[2].integer_value=ma_method;
+      //--- type of volume
+      pars[3].type=TYPE_INT;
+      pars[3].integer_value=applied_volume;
+      handle=IndicatorCreate(name,period,IND_CHAIKIN,4,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iChaikin indicator for the symbol %s
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Chaikin Oscillator indicator is calculated for
+   short_name=StringFormat("iChaikin(%s/%s, %d, %d, %s, %s)",name,EnumToString(period)
+                           fast_ma_period,slow_ma_period,
+                           EnumToString(ma_method),EnumToString(applied_volume));
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator  
+   return(INIT_SUCCEEDED);
+  }
+
+
+--- Page 2795 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2795
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iChaikin indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iChaikinBuffer array is greater than the number of values in the iC
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iChaikinBuffer array with values of the Chaikin Oscillator indicator
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArrayFromBuffer(iChaikinBuffer,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Chaikin Oscillator indicator
+
+
+--- Page 2796 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2796
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iChaikin indicator            |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],  // indicator buffer of Chaikin Oscillator 
+                         int ind_handle,    // handle of the iChaikin indicator
+                         int amount         // number of copied values
+                         )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iChaikinBuffer array with values from the indicator buffer th
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iChaikin indicator, error code %d",Get
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }  
+
+
+--- Page 2797 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2797
+iCustom
+The function returns the handle of a specified custom indicator.
+int  iCustom(
+   string           symbol,     // symbol name
+   ENUM_TIMEFRAMES  period,     // period
+   string           name        // folder/custom_indicator_name
+   ...                          // list of indicator input parameters
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+name
+[in]  Custom indicator name. If the name starts with the reverse slash '\', the EX5 indicator file is
+searched for relative to the MQL5 root directory. So, for a call of iCustom(Symbol(), Period(),
+"\FirstIndicator"...), the indicator will be loaded as MQL5\FirstIndicator.ex5. If the file is not found
+at this path, error 4802 (ERR_INDICATOR_CANNOT_CREATE) is returned.
+If the path does not start with '\', the indicator is searched and downloaded as follows:
+· First, the indicator EX5 file is searched for in the folder where the EX5 file of the calling program
+is located. For example, the CrossMA.EX5 EA is located in MQL5\Experts\MyExperts and contains
+the iCustom call (Symbol(), Period(), "SecondIndicator"...). In this case, the indicator is
+searched for in MQL5\Experts\MyExperts\SecondIndicator.ex5.
+· If the indicator is not found in the same directory, the search is performed relative to the
+MQL5\Indicators 
+indicator 
+root 
+directory. 
+In 
+other 
+words, 
+the 
+search 
+for 
+the
+MQL5\Indicators\SecondIndicator.ex5 file is performed. If the indicator is still not found, the
+function returns INVALID_HANDLE and the error 4802 (ERR_INDICATOR_CANNOT_CREATE) is
+triggered.
+If the path to the indicator is set in the subdirectory (for example, MyIndicators\ThirdIndicator),
+the search is first performed in the calling program folder (the EA is located in
+MQL5\Experts\MyExperts) 
+in 
+MQL5\Experts\MyExperts\MyIndicators\ThirdIndicator.ex5. 
+If
+unsuccessful, the search for the MQL5\Indicators\MyIndicators\ThirdIndicator.ex5 file is
+performed. Make sure to use the double reverse slash '\\' as a separator in the path, for example
+iCustom(Symbol(), Period(), "MyIndicators\\ThirdIndicator"...)
+...
+[in]  input-parameters of a custom indicator, separated by commas. Type and order of parameters
+must match. If there is no parameters specified, then default values will be used.
+Return Value
+
+
+--- Page 2798 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2798
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Note
+A custom indicator must be compiled (with extension EX5) and located in the directory
+MQL5/Indicators of the client terminal or its subdirectory.
+Indicators that require testing are defined automatically from the call of the iCustom() function, if
+the corresponding parameter is set through a constant string. For all other cases (use of the
+IndicatorCreate() function or use of a non-constant string in the parameter that sets the indicator
+name) the property #property tester_indicator is required:
+#property tester_indicator "indicator_name.ex5"
+ If the first call form is used in the indicator, then at the custom indicator start you can additionally
+indicate data for calculation in its "Parameters" tab. If the "Apply to" parameter is not selected
+explicitly, the default calculation is based on the values of "Close" prices.
+When you call a custom indicator from mql5-program, the Applied_Price parameter or a handle of
+another indicator should be passed last, after all input variables of the custom indicator.
+See also
+Program Properties, Timeseries and Indicators Access,IndicatorCreate(), IndicatorRelease()
+Example:
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//---- plot Label1
+#property indicator_label1  "Label1"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrRed
+
+
+--- Page 2799 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2799
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- input parameters
+input int MA_Period=21;
+input int MA_Shift=0;
+input ENUM_MA_METHOD MA_Method=MODE_SMA;
+//--- indicator buffers
+double         Label1Buffer[];
+//--- Handle of the Custom Moving Average.mq5 custom indicator
+int MA_handle;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,Label1Buffer,INDICATOR_DATA);
+   ResetLastError();
+   MA_handle=iCustom(NULL,0,"Examples\\Custom Moving Average",
+                     MA_Period,
+                     MA_Shift,
+                     MA_Method,
+                     PRICE_CLOSE // using the close prices
+                     );
+   Print("MA_handle = ",MA_handle,"  error = ",GetLastError());
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- Copy the values of the indicator Custom Moving Average to our indicator buffer
+   int copy=CopyBuffer(MA_handle,0,0,rates_total,Label1Buffer);
+   Print("copy = ",copy,"    rates_total = ",rates_total);
+//--- If our attempt has failed - Report this
+   if(copy<=0)
+      Print("An attempt to get the values if Custom Moving Average has failed");
+//--- return value of prev_calculated for next call
+
+
+--- Page 2800 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2800
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 2801 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2801
+iDEMA
+The function returns the handle of the Double Exponential Moving Average indicator. It has only one
+buffer.
+int  iDEMA(
+   string              symbol,            // symbol name
+   ENUM_TIMEFRAMES     period,            // period
+   int                 ma_period,         // averaging period
+   int                 ma_shift,          // horizontal shift
+   ENUM_APPLIED_PRICE  applied_price      // type of price or handle
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ma_period
+[in] Averaging period (bars count) for calculations.
+ma_shift
+[in]  Shift of the indicator relative to the price chart.
+applied_price
+[in]  The price used. Can be any of the price constants ENUM_APPLIED_PRICE or a handle of
+another indicator.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                   Demo_iDEMA.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iDEMA technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+
+
+--- Page 2802 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2802
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- the iDEMA plot
+#property indicator_label1  "iDEMA"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iDEMA,             // use iDEMA
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iDEMA;           // type of te function 
+input int                  ma_period=14;              // period of moving average
+input int                  ma_shift=0;                // shift
+input ENUM_APPLIED_PRICE   applied_price=PRICE_CLOSE; // type of price
+input string               symbol=" ";                // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;     // timeframe
+//--- indicator buffer
+double         iDEMABuffer[];
+//--- variable for storing the handle of the iDEMA indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Double Exponential Moving Average indic
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iDEMABuffer,INDICATOR_DATA);
+   //--- set shift
+   PlotIndexSetInteger(0,PLOT_SHIFT,ma_shift);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+
+
+--- Page 2803 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2803
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iDEMA)
+      handle=iDEMA(name,period,ma_period,ma_shift,applied_price);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[3];
+      //--- period of moving average
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=ma_period;
+      //--- shift
+      pars[1].type=TYPE_INT;
+      pars[1].integer_value=ma_shift;
+      //--- type of price
+      pars[2].type=TYPE_INT;
+      pars[2].integer_value=applied_price;
+      handle=IndicatorCreate(name,period,IND_DEMA,3,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iDEMA indicator for the symbol %s/%s
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Double Exponential Moving Average indicator is cal
+   short_name=StringFormat("iDEMA(%s/%s, %d, %d, %s)",name,EnumToString(period),
+                           ma_period,ma_shift,EnumToString(applied_price));
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator  
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+
+
+--- Page 2804 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2804
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iDEMA indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iDEMABuffer array is greater than the number of values in the iDEMA
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iDEMABuffer array with values of the Double Exponential Moving Average 
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArrayFromBuffer(iDEMABuffer,ma_shift,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Double Exponential Moving Average indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 2805 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2805
+//| Filling indicator buffers from the iDEMA indicator               |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],  // indicator buffer of Double Exponential 
+                         int shift,         // shift
+                         int ind_handle,    // handle of the iDEMA indicator
+                         int amount         // number of copied values
+                         )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iDEMABuffer array with values from the indicator buffer that 
+   if(CopyBuffer(ind_handle,0,-shift,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iDEMA indicator, error code %d",GetLas
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2806 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2806
+iDeMarker
+The function returns the handle of the DeMarker indicator. It has only one buffer.
+int  iDeMarker(
+   string           symbol,        // symbol name
+   ENUM_TIMEFRAMES  period,        // period
+   int              ma_period      // averaging period
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ma_period
+[in] Averaging period (bars count) for calculations.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                               Demo_iDeMarker.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iDeMarker technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- the iDeMarker plot
+#property indicator_label1  "iDeMarker"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrLightSeaGreen
+
+
+--- Page 2807 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2807
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- horizontal levels in the indicator window
+#property indicator_level1  0.3
+#property indicator_level2  0.7
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iDeMarker,         // use iDeMarker
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iDeMarker;       // type of the function 
+input int                  ma_period=14;              // period of moving average
+input string               symbol=" ";                // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;     // timeframe
+//--- indicator buffer
+double         iDeMarkerBuffer[];
+//--- variable for storing the handle of the iDeMarker indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the DeMarker indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iDeMarkerBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iDeMarker)
+      handle=iDeMarker(name,period,ma_period);
+
+
+--- Page 2808 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2808
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[1];
+      //--- period of moving average
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=ma_period;
+      handle=IndicatorCreate(name,period,IND_DEMARKER,1,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iDeMarker indicator for the symbol %
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the DeMarker indicator is calculated for
+   short_name=StringFormat("iDeMarker(%s/%s, period=%d)",name,EnumToString(period),ma_
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator  
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iDeMarker indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+
+
+--- Page 2809 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2809
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iDeMarkerBuffer array is greater than the number of values in the i
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iDeMarkerBuffer array with values of the DeMarker indicator
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArrayFromBuffer(iDeMarkerBuffer,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the DeMarker indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iDeMarker indicator           |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],  // indicator buffer for DeMarker values
+                         int ind_handle,    // handle of the iDeMarker indicator
+                         int amount         // number of copied values
+                         )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iDeMarkerBuffer array with values from the indicator buffer t
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iDeMarker indicator, error code %d",Ge
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+
+
+--- Page 2810 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2810
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2811 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2811
+iEnvelopes
+The function returns the handle of the Envelopes indicator.
+int  iEnvelopes(
+   string              symbol,            // symbol name
+   ENUM_TIMEFRAMES     period,            // period
+   int                 ma_period,         // period for the average line calculation
+   int                 ma_shift,          // horizontal shift of the indicator
+   ENUM_MA_METHOD      ma_method,         // type of smoothing
+   ENUM_APPLIED_PRICE  applied_price,     // type of price or handle
+   double              deviation          // deviation of boundaries from the midline 
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ma_period
+[in] Averaging period for the main line.
+ma_shift
+[in] The shift of the indicator relative to the price chart.
+ma_method
+[in]  Smoothing type. Can be one of the values of ENUM_MA_METHOD.
+applied_price
+[in]  The price used. Can be any of the price constants ENUM_APPLIED_PRICE or a handle of
+another indicator.
+deviation
+[in]  The deviation from the main line (in percents).
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Note
+The buffer numbers: 0 - UPPER_LINE, 1 - LOWER_LINE.
+Example:
+//+------------------------------------------------------------------+
+
+
+--- Page 2812 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2812
+//|                                              Demo_iEnvelopes.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iEnvelopes technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_chart_window
+#property indicator_buffers 2
+#property indicator_plots   2
+//--- the Upper plot
+#property indicator_label1  "Upper"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrBlue
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- the Lower plot
+#property indicator_label2  "Lower"
+#property indicator_type2   DRAW_LINE
+#property indicator_color2  clrRed
+#property indicator_style2  STYLE_SOLID
+#property indicator_width2  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iEnvelopes,        // use iEnvelopes
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iEnvelopes;      // type of the function 
+input int                  ma_period=14;              // period of moving average
+input int                  ma_shift=0;                // shift 
+input ENUM_MA_METHOD       ma_method=MODE_SMA;        // type of smoothing
+input ENUM_APPLIED_PRICE   applied_price=PRICE_CLOSE; // type of price
+input double               deviation=0.1;             // deviation of borders from the
+input string               symbol=" ";                // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;     // timeframe
+//--- indicator buffer
+double         UpperBuffer[];
+double         LowerBuffer[];
+//--- variable for storing the handle of the iEnvelopes indicator
+
+
+--- Page 2813 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2813
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Envelopes indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of arrays to indicator buffers
+   SetIndexBuffer(0,UpperBuffer,INDICATOR_DATA);
+   SetIndexBuffer(1,LowerBuffer,INDICATOR_DATA);
+//--- set shift of each line
+   PlotIndexSetInteger(0,PLOT_SHIFT,ma_shift);
+   PlotIndexSetInteger(1,PLOT_SHIFT,ma_shift);   
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iEnvelopes)
+      handle=iEnvelopes(name,period,ma_period,ma_shift,ma_method,applied_price,deviati
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[5];
+      //--- period of moving average
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=ma_period;
+      //--- shift
+      pars[1].type=TYPE_INT;
+      pars[1].integer_value=ma_shift;
+      //--- type of smoothing
+      pars[2].type=TYPE_INT;
+      pars[2].integer_value=ma_method;
+      //--- type of price
+      pars[3].type=TYPE_INT;
+      pars[3].integer_value=applied_price;
+      //--- type of price
+
+
+--- Page 2814 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2814
+      pars[4].type=TYPE_DOUBLE;
+      pars[4].double_value=deviation;
+      handle=IndicatorCreate(name,period,IND_ENVELOPES,5,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iEnvelopes indicator for the symbol 
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Envelopes indicator is calculated for
+   short_name=StringFormat("iEnvelopes(%s/%s, %d, %d, %s,%s, %G)",name,EnumToString(pe
+   ma_period,ma_shift,EnumToString(ma_method),EnumToString(applied_price),deviation);
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator  
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iEnvelopes indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+
+
+--- Page 2815 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2815
+      //--- if the UpperBuffer array is greater than the number of values in the iEnve
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the UpperBuffer and LowerBuffer arrays with values from the Envelopes indic
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArraysFromBuffers(UpperBuffer,LowerBuffer,ma_shift,handle,values_to_copy)) 
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Envelopes indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iEnvelopes indicator          |
+//+------------------------------------------------------------------+
+bool FillArraysFromBuffers(double &upper_values[],    // indicator buffer of the upper
+                           double &lower_values[],    // indicator of the lower border
+                           int shift,                 // shift
+                           int ind_handle,            // handle of the iEnvelopes indi
+                           int amount                 // number of copied values
+                           )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the UpperBuffer array with values from the indicator buffer that 
+   if(CopyBuffer(ind_handle,0,-shift,amount,upper_values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iEnvelopes indicator, error code %d",G
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- fill a part of the LowerBuffer array with values from the indicator buffer that 
+   if(CopyBuffer(ind_handle,1,-shift,amount,lower_values)<0)
+     {
+
+
+--- Page 2816 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2816
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iEnvelopes indicator, error code %d",G
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2817 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2817
+iForce
+The function returns the handle of the Force Index indicator. It has only one buffer.
+int  iForce(
+   string              symbol,            // symbol name
+   ENUM_TIMEFRAMES     period,            // period
+   int                 ma_period,         // averaging period
+   ENUM_MA_METHOD      ma_method,         // smoothing type
+   ENUM_APPLIED_VOLUME applied_volume     // volume type for calculation
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+ma_period
+[in] Averaging period for the indicator calculations.
+ma_method
+[in]  Smoothing type. Can be one of the values of ENUM_MA_METHOD.
+applied_volume
+[in]  The volume used. Can be one of the values of ENUM_APPLIED_VOLUME.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Example:
+//+------------------------------------------------------------------+
+//|                                                  Demo_iForce.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iForce technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+
+
+--- Page 2818 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2818
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- drawing iForce
+#property indicator_label1  "iForce"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrLightSeaGreen
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iForce,            // use iForce
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iForce;             // type of the function 
+input int                  ma_period=13;                 // period of averaging
+input ENUM_MA_METHOD       ma_method=MODE_SMA;           // type of smoothing
+input ENUM_APPLIED_VOLUME  applied_volume=VOLUME_TICK;   // type of volume
+input string               symbol=" ";                   // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;        // timeframe
+//--- indicator buffer
+double         iForceBuffer[];
+//--- variable for storing the handle of the iForce indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Force indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of array to indicator buffer
+   SetIndexBuffer(0,iForceBuffer,INDICATOR_DATA);
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+
+
+--- Page 2819 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2819
+     {
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iForce)
+      handle=iForce(name,period,ma_period,ma_method,applied_volume);
+   else
+     {
+      //--- fill the structure with parameters of the indicator
+      MqlParam pars[3];
+      //--- period of moving average
+      pars[0].type=TYPE_INT;
+      pars[0].integer_value=ma_period;
+      //--- type of smoothing
+      pars[1].type=TYPE_INT;
+      pars[1].integer_value=ma_method;
+      //--- type of volume
+      pars[2].type=TYPE_INT;
+      pars[2].integer_value=applied_volume;
+      //--- type of price
+      handle=IndicatorCreate(name,period,IND_FORCE,3,pars);
+     }
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iForce indicator for the symbol %s/%
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Force indicator is calculated for
+   short_name=StringFormat("iForce(%s/%s, %d, %s, %s)",name,EnumToString(period),
+                           ma_period,EnumToString(ma_method),EnumToString(applied_volu
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator  
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+
+
+--- Page 2820 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2820
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iForce indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the iForceBuffer array is greater than the number of values in the iFor
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the iForceBuffer array with values of the Force indicator
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArrayFromBuffer(iForceBuffer,handle,values_to_copy)) return(0);
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Force indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iForce indicator              |
+//+------------------------------------------------------------------+
+bool FillArrayFromBuffer(double &values[],  // indicator buffer of Force Index values
+
+
+--- Page 2821 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2821
+                         int ind_handle,    // handle of the iForce indicator
+                         int amount         // number of copied values
+                         )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the iForceBuffer array with values from the indicator buffer that
+   if(CopyBuffer(ind_handle,0,0,amount,values)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iForce indicator, error code %d",GetLa
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }
+//--- everything is fine
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Indicator deinitialization function                              |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+   if(handle!=INVALID_HANDLE)
+      IndicatorRelease(handle);
+//--- clear the chart after deleting the indicator
+   Comment("");
+  }
+
+
+--- Page 2822 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2822
+iFractals
+The function returns the handle of the Fractals indicator.
+int  iFractals(
+   string           symbol,     // symbol name
+   ENUM_TIMEFRAMES  period      // period
+   );
+Parameters
+symbol
+[in] The symbol name of the security, the data of which should be used to calculate the indicator.
+The NULL value means the current symbol.
+period
+[in] The value of the period can be one of the ENUM_TIMEFRAMES values, 0 means the current
+timeframe.
+Return Value
+Returns the handle of a specified technical indicator,  in case of failure returns INVALID_HANDLE.
+The computer memory can be freed from an indicator that is no more utilized, using the
+IndicatorRelease() function, to which the indicator handle is passed.
+Note
+The buffer numbers are the following: 0 - UPPER_LINE, 1 - LOWER_LINE.
+Example:
+//+------------------------------------------------------------------+
+//|                                               Demo_iFractals.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "The indicator demonstrates how to obtain data"
+#property description "of indicator buffers for the iFractals technical indicator."
+#property description "A symbol and timeframe used for calculation of the indicator,"
+#property description "are set by the symbol and period parameters."
+#property description "The method of creation of the handle is set through the 'type' 
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+#property indicator_chart_window
+#property indicator_buffers 2
+#property indicator_plots   2
+//--- the FractalUp plot
+
+
+--- Page 2823 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2823
+#property indicator_label1  "FractalUp"
+#property indicator_type1   DRAW_ARROW
+#property indicator_color1  clrBlue
+//--- the FractalDown plot
+#property indicator_label2  "FractalDown"
+#property indicator_type2   DRAW_ARROW
+#property indicator_color2  clrRed
+//+------------------------------------------------------------------+
+//| Enumeration of the methods of handle creation                    |
+//+------------------------------------------------------------------+
+enum Creation
+  {
+   Call_iFractals,         // use iFractals
+   Call_IndicatorCreate    // use IndicatorCreate
+  };
+//--- input parameters
+input Creation             type=Call_iFractals;          // type of the function
+input string               symbol=" ";                   // symbol 
+input ENUM_TIMEFRAMES      period=PERIOD_CURRENT;        // timeframe
+//--- indicator buffers
+double         FractalUpBuffer[];
+double         FractalDownBuffer[];
+//--- variable for storing the handle of the iFractals indicator
+int    handle;
+//--- variable for storing
+string name=symbol;
+//--- name of the indicator on a chart
+string short_name;
+//--- we will keep the number of values in the Fractals indicator
+int    bars_calculated=0;
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- assignment of arrays to indicator buffers
+   SetIndexBuffer(0,FractalUpBuffer,INDICATOR_DATA);
+   SetIndexBuffer(1,FractalDownBuffer,INDICATOR_DATA);
+//--- set codes using a symbol from the Wingdings charset for the PLOT_ARROW property
+   PlotIndexSetInteger(0,PLOT_ARROW,217); // arrow up
+   PlotIndexSetInteger(1,PLOT_ARROW,218); // arrow down
+//--- determine the symbol the indicator is drawn for
+   name=symbol;
+//--- delete spaces to the right and to the left
+   StringTrimRight(name);
+   StringTrimLeft(name);
+//--- if it results in zero length of the 'name' string
+   if(StringLen(name)==0)
+     {
+
+
+--- Page 2824 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2824
+      //--- take the symbol of the chart the indicator is attached to
+      name=_Symbol;
+     }
+//--- create handle of the indicator
+   if(type==Call_iFractals)
+      handle=iFractals(name,period);
+   else
+      handle=IndicatorCreate(name,period,IND_FRACTALS);
+//--- if the handle is not created
+   if(handle==INVALID_HANDLE)
+     {
+      //--- tell about the failure and output the error code
+      PrintFormat("Failed to create handle of the iFractals indicator for the symbol %
+                  name,
+                  EnumToString(period),
+                  GetLastError());
+      //--- the indicator is stopped early
+      return(INIT_FAILED);
+     }
+//--- show the symbol/timeframe the Fractals indicator is calculated for
+   short_name=StringFormat("iFractals(%s/%s)",name,EnumToString(period));
+   IndicatorSetString(INDICATOR_SHORTNAME,short_name);
+//--- normal initialization of the indicator
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- number of values copied from the iFractals indicator
+   int values_to_copy;
+//--- determine the number of values calculated in the indicator
+   int calculated=BarsCalculated(handle);
+   if(calculated<=0)
+     {
+      PrintFormat("BarsCalculated() returned %d, error code %d",calculated,GetLastErro
+      return(0);
+     }
+//--- if it is the first start of calculation of the indicator or if the number of val
+
+
+--- Page 2825 ---
+Technical Indicators
+© 2000-2025, MetaQuotes Ltd.
+2825
+//---or if it is necessary to calculated the indicator for two or more bars (it means 
+   if(prev_calculated==0 || calculated!=bars_calculated || rates_total>prev_calculated
+     {
+      //--- if the FractalUpBuffer array is greater than the number of values in the i
+      //--- otherwise, we copy less than the size of indicator buffers
+      if(calculated>rates_total) values_to_copy=rates_total;
+      else                       values_to_copy=calculated;
+     }
+   else
+     {
+      //--- it means that it's not the first time of the indicator calculation, and si
+      //--- for calculation not more than one bar is added
+      values_to_copy=(rates_total-prev_calculated)+1;
+     }
+//--- fill the FractalUpBuffer and FractalDownBuffer arrays with values from the Fract
+//--- if FillArrayFromBuffer returns false, it means the information is nor ready yet,
+   if(!FillArraysFromBuffers(FractalUpBuffer,FractalDownBuffer,handle,values_to_copy))
+//--- form the message
+   string comm=StringFormat("%s ==>  Updated value in the indicator %s: %d",
+                            TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS),
+                            short_name,
+                            values_to_copy);
+//--- display the service message on the chart
+   Comment(comm);
+//--- memorize the number of values in the Fractals indicator
+   bars_calculated=calculated;
+//--- return the prev_calculated value for the next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Filling indicator buffers from the iFractals indicator           |
+//+------------------------------------------------------------------+
+bool FillArraysFromBuffers(double &up_arrows[],        // indicator buffer for up arro
+                           double &down_arrows[],      // indicator buffer for down ar
+                           int ind_handle,             // handle of the iFractals indi
+                           int amount                  // number of copied values
+                           )
+  {
+//--- reset error code
+   ResetLastError();
+//--- fill a part of the FractalUpBuffer array with values from the indicator buffer t
+   if(CopyBuffer(ind_handle,0,0,amount,up_arrows)<0)
+     {
+      //--- if the copying fails, tell the error code
+      PrintFormat("Failed to copy data from the iFractals indicator to the FractalUpBu
+                  GetLastError());
+      //--- quit with zero result - it means that the indicator is considered as not c
+      return(false);
+     }

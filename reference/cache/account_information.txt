@@ -1,0 +1,143 @@
+=== Account Information (Pages 1868-1872) ===
+
+--- Page 1868 ---
+Account Information
+© 2000-2025, MetaQuotes Ltd.
+1868
+Account Information
+Functions that return parameters of the current account.
+Function
+Action
+AccountInfoDouble
+Returns a value of double type of the corresponding account
+property
+AccountInfoInteger
+Returns a value of integer type (bool, int or long) of the
+corresponding account property
+AccountInfoString
+Returns a value string type corresponding account property
+
+
+--- Page 1869 ---
+Account Information
+© 2000-2025, MetaQuotes Ltd.
+1869
+AccountInfoDouble
+Returns the value of the appropriate account property.
+double  AccountInfoDouble(
+   ENUM_ACCOUNT_INFO_DOUBLE  property_id      // Property identifier
+   );
+Parameters
+property_id
+[in]  Property identifier. The value can be one of the values of ENUM_ACCOUNT_INFO_DOUBLE.
+Return Value
+Value of double type.
+Example:
+void OnStart()
+  {
+//--- Show all the information available from the function AccountInfoDouble()
+   printf("ACCOUNT_BALANCE =  %G",AccountInfoDouble(ACCOUNT_BALANCE));
+   printf("ACCOUNT_CREDIT =  %G",AccountInfoDouble(ACCOUNT_CREDIT));
+   printf("ACCOUNT_PROFIT =  %G",AccountInfoDouble(ACCOUNT_PROFIT));
+   printf("ACCOUNT_EQUITY =  %G",AccountInfoDouble(ACCOUNT_EQUITY));
+   printf("ACCOUNT_MARGIN =  %G",AccountInfoDouble(ACCOUNT_MARGIN));
+   printf("ACCOUNT_MARGIN_FREE =  %G",AccountInfoDouble(ACCOUNT_MARGIN_FREE));
+   printf("ACCOUNT_MARGIN_LEVEL =  %G",AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
+   printf("ACCOUNT_MARGIN_SO_CALL = %G",AccountInfoDouble(ACCOUNT_MARGIN_SO_CALL));
+   printf("ACCOUNT_MARGIN_SO_SO = %G",AccountInfoDouble(ACCOUNT_MARGIN_SO_SO));
+  }
+See also
+SymbolInfoDouble,  SymbolInfoString, SymbolInfoInteger, PrintFormat
+
+
+--- Page 1870 ---
+Account Information
+© 2000-2025, MetaQuotes Ltd.
+1870
+AccountInfoInteger
+Returns the value of the appropriate account property.
+long  AccountInfoInteger(
+   ENUM_ACCOUNT_INFO_INTEGER  property_id      // Identifier of the property
+   );
+Parameters
+property_id
+[in]  Property identifier. The value can be one of the values of ENUM_ACCOUNT_INFO_INTEGER.
+Return Value
+Value of long type.
+Note
+The property must be of bool, int or long type.
+Example:
+void OnStart()
+  {
+//--- Show all the information available from the function AccountInfoInteger()
+   printf("ACCOUNT_LOGIN =  %d",AccountInfoInteger(ACCOUNT_LOGIN));
+   printf("ACCOUNT_LEVERAGE =  %d",AccountInfoInteger(ACCOUNT_LEVERAGE));
+   bool thisAccountTradeAllowed=AccountInfoInteger(ACCOUNT_TRADE_ALLOWED);
+   bool EATradeAllowed=AccountInfoInteger(ACCOUNT_TRADE_EXPERT);
+   ENUM_ACCOUNT_TRADE_MODE tradeMode=(ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOU
+   ENUM_ACCOUNT_STOPOUT_MODE stopOutMode=(ENUM_ACCOUNT_STOPOUT_MODE)AccountInfoInteger
+//--- Inform about the possibility to perform a trade operation
+   if(thisAccountTradeAllowed)
+      Print("Trade for this account is permitted");
+   else
+      Print("Trade for this account is prohibited!");
+//--- Find out if it is possible to trade on this account by Expert Advisors
+   if(EATradeAllowed)
+      Print("Trade by Expert Advisors is permitted for this account");
+   else
+      Print("Trade by Expert Advisors is prohibited for this account!");
+//--- Find out the account type
+   switch(tradeMode)
+     {
+      case(ACCOUNT_TRADE_MODE_DEMO):
+         Print("This is a demo account");
+         break;
+      case(ACCOUNT_TRADE_MODE_CONTEST):
+
+
+--- Page 1871 ---
+Account Information
+© 2000-2025, MetaQuotes Ltd.
+1871
+         Print("This is a competition account");
+         break;
+      default:Print("This is a real account!");
+     }
+//--- Find out the StopOut level setting mode
+   switch(stopOutMode)
+     {
+      case(ACCOUNT_STOPOUT_MODE_PERCENT):
+         Print("The StopOut level is specified percentage");
+         break;
+      default:Print("The StopOut level is specified in monetary terms");
+     }
+  }
+See also
+Account Information 
+
+
+--- Page 1872 ---
+Account Information
+© 2000-2025, MetaQuotes Ltd.
+1872
+AccountInfoString
+Returns the value of the appropriate account property.
+string  AccountInfoString(
+   ENUM_ACCOUNT_INFO_STRING  property_id      // Property identifier
+   );
+Parameters
+property_id
+[in]  Property identifier. The value can be one of the values of ENUM_ACCOUNT_INFO_STRING.
+Return Value
+Value of string type.
+Example:
+void OnStart()
+  {
+//--- Show all the information available from the function AccountInfoString()
+   Print("The name of the broker = ",AccountInfoString(ACCOUNT_COMPANY));
+   Print("Deposit currency = ",AccountInfoString(ACCOUNT_CURRENCY));
+   Print("Client name = ",AccountInfoString(ACCOUNT_NAME));
+   Print("The name of the trade server = ",AccountInfoString(ACCOUNT_SERVER));
+  }
+See also
+Account Information 

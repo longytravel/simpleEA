@@ -1,0 +1,2185 @@
+=== Custom Indicators (Pages 2558-2689) ===
+
+--- Page 2558 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2558
+Custom Indicators 
+This is the group functions used in the creation of custom indicators. These functions can't be used
+when writing Expert Advisors and Scripts.
+Function
+Action
+SetIndexBuffer
+Binds the specified indicator buffer with one-dimensional dynamic
+array of the double type
+IndicatorSetDouble
+Sets the value of an indicator property of the double type
+IndicatorSetInteger
+Sets the value of an indicator property of the int type
+IndicatorSetString
+Sets the value of an indicator property of the string type
+PlotIndexSetDouble
+Sets the value of an indicator line property of the type double
+PlotIndexSetInteger
+Sets the value of an indicator line property of the int type
+PlotIndexSetString
+Sets the value of an indicator line property of the string type
+PlotIndexGetInteger
+Returns the value of an indicator line property of the integer type
+Indicator properties can be set using the compiler directives or using functions. To better understand
+this, it is recommended that you study indicator styles in examples.
+All the necessary calculations of a custom indicator must be placed in the predetermined function
+OnCalculate(). If you use a short form of the OnCalculate() function call, like
+int OnCalculate (const int rates_total, const int prev_calculated, const int begin, co
+then the rates_total variable contains the value of the total number of elements of the price[] array,
+passed as an input parameter for calculating indicator values.
+Parameter prev_calculated is the result of the execution of OnCalculate() at the previous call; it allows
+organizing a saving algorithm for calculating indicator values. For example, if the current value
+rates_total = 1000, prev_calculated = 999, then perhaps it's enough to make calculations only for one
+value of each indicator buffer.
+If the information about the size of the input array price would have been unavailable, then it would
+lead to the necessity to make calculations for 1000 values of each indicator buffer. At the first call of
+OnCalculate() value prev_calculated = 0. If the price[] array has changed somehow, then in this case
+prev_calculated is also equal to 0.
+The begin parameter shows the number of initial values of the price array, which don't contain data for
+calculation. For example, if values of Accelerator Oscillator (for which the first 37 values aren't
+calculated) were used as an input parameter, then begin = 37. For example, let's consider a simple
+indicator:
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//---- plot Label1
+#property indicator_label1  "Label1"
+
+
+--- Page 2559 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2559
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- indicator buffers
+double         Label1Buffer[];
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+void OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,Label1Buffer,INDICATOR_DATA);
+//---
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const int begin,
+                const double &price[])
+  {
+//---
+   Print("begin = ",begin,"  prev_calculated = ",prev_calculated,"  rates_total = ",ra
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+Drag it from the "Navigator" window to the window of the Accelerator Oscillator indicator and we
+indicate that calculations will be made based on the values of the previous indicator:
+
+
+--- Page 2560 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2560
+As a result, the first call of OnCalculate() the value of prev_calculated will be equal to zero, and in
+further calls it will be equal to the rates_total value (until the number of bars on the price chart
+increases).
+The value of the begin parameter will be exactly equal to the number of initial bars, for which the
+values of the Accelerator indicator aren't calculated according to the logic of this indicator. If we look
+at the source code of the custom indicator Accelerator.mq5, we'll see the following lines in the OnInit()
+function:
+//--- sets first bar from which index will be drawn
+   PlotIndexSetInteger(0,PLOT_DRAW_BEGIN,37);
+Using the function PlotIndexSetInteger(0, PLOT_DRAW_BEGIN, empty_first_values), we set the
+number of non-existing first values in the zero indicator array of a custom indicator, which we don't
+need to accept for calculation (empty_first_values). Thus, we have mechanisms to:
+1. set the number of initial values of an indicator, which shouldn't be used for calculations in another
+custom indicator;
+2. get information on the number of first values to be ignored when you call another custom indicator,
+without going into the logic of its calculations.
+
+
+--- Page 2561 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2561
+Indicator Styles in Examples
+The MetaTrader 5 Client Terminal includes 38 technical indicators that can be used in MQL5 programs
+using appropriate functions. But the main advantage of the MQL5 language is the ability to create
+custom indicators, which can then be used in Expert Advisors or simply applied on price charts for the
+purpose of technical analysis.
+The entire set of indicators can be derived from several base drawing styles, known as plotting.
+Plotting denotes a way of displaying data, which the indicator calculates, stores and provides on
+request. There are seven such basic plotting types:
+1. A line
+2. A section (segment)
+3. Histogram
+4. Arrow (symbol)
+5. A painted area (filled channel)
+6. Bars
+7. Japanese candlesticks
+Each plotting requires one to five arrays of the double type, in which indicator values are stored. For
+the purpose of convenience, these arrays are associated with the indicator buffers. The number of
+buffers in an indicator must be declared in advance using compiler directives, for example:
+#property indicator_buffers 3 // Number of buffers
+#property indicator_plots   2 // number of plots
+The number of buffers in the indicator is always greater than or equal to the number of plots in the
+indicator.
+Since each basic plotting type can have color variation or construction specifics, the actual number of
+plotting types in the MQL5 is 18:
+Plotting
+Descripti
+on
+Value buffers
+Color buffers
+DRAW_NONE
+Is 
+not
+visually
+displayed
+in 
+the
+chart,
+but 
+the
+values of
+the
+correspo
+nding
+buffer
+can 
+be
+viewed
+in 
+the
+Data
+Window
+1
+-
+
+
+--- Page 2562 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2562
+Plotting
+Descripti
+on
+Value buffers
+Color buffers
+DRAW_LINE
+A line is
+plotted
+on 
+the
+values of
+the
+correspo
+nding
+buffer
+(empty
+values ​in
+the
+buffer
+are
+undesira
+ble)
+1
+-
+DRAW_SECTION
+Is drawn
+as 
+line
+segment
+s
+between
+the
+values ​of
+the
+correspo
+nding
+buffer
+(usually
+has a lot
+of empty
+values)
+1
+-
+DRAW_HISTOGRAM
+Is drawn
+as 
+a
+histogra
+m 
+from
+the zero
+line 
+to
+the
+values ​of
+the
+correspo
+nding
+buffer
+(may
+have
+empty
+values)
+1
+-
+
+
+--- Page 2563 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2563
+Plotting
+Descripti
+on
+Value buffers
+Color buffers
+DRAW_HISTOGRAM2
+Is drawn
+as 
+a
+histogra
+m based
+on 
+two
+indicator
+buffers
+(may
+have
+empty
+values)
+2
+-
+DRAW_ARROW
+Is drawn
+as
+symbols
+(may
+have
+empty
+values)
+1
+-
+DRAW_ZIGZAG
+Similar
+to 
+the
+style
+DRAW_S
+ECTION,
+but
+unlike it,
+can plot
+vertical
+segment
+s on one
+bar
+2
+-
+DRAW_FILLING
+Color fill
+between
+two
+lines. 
+2
+values ​of
+the
+correspo
+nding
+buffers
+are
+shown in
+the Data
+Window
+2
+-
+DRAW_BARS
+Is drawn
+as bars.
+4 values ​
+4
+-
+
+
+--- Page 2564 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2564
+Plotting
+Descripti
+on
+Value buffers
+Color buffers
+of 
+the
+correspo
+nding
+buffers
+are
+shown in
+the Data
+Window
+DRAW_CANDLES
+Drawn as
+Japanese
+candlesti
+cks. 
+4
+values ​of
+the
+correspo
+nding
+buffers
+are
+shown in
+the Data
+Window
+4
+-
+DRAW_COLOR_LINE
+A line for
+which
+you 
+can
+alternate
+colors on
+different
+bars 
+or
+change
+its color
+at 
+any
+time
+1
+1
+DRAW_COLOR_SECTION
+Similar
+to 
+the
+style
+DRAW_S
+ECTION,
+but 
+the
+color 
+of
+each
+section
+can 
+be
+set
+individua
+lly; color
+can also
+1
+1
+
+
+--- Page 2565 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2565
+Plotting
+Descripti
+on
+Value buffers
+Color buffers
+be 
+set
+dynamica
+lly
+DRAW_COLOR_HISTOGRAM
+Similar
+to 
+the
+style
+DRAW_H
+ISTOGRA
+M, 
+but
+each
+strip may
+have 
+a
+different
+color,
+you 
+can
+set 
+the
+color
+dynamica
+lly
+1
+1
+DRAW_COLOR_HISTOGRAM2
+Similar
+to 
+the
+style
+DRAW_H
+ISTOGRA
+M2, but
+each
+strip may
+have 
+a
+different
+color,
+you 
+can
+set 
+the
+color
+dynamica
+lly
+2
+1
+DRAW_COLOR_ARROW
+Similar
+to 
+the
+style
+DRAW_A
+RROW,
+but each
+symbol
+can have
+its color.
+Color can
+be
+1
+1
+
+
+--- Page 2566 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2566
+Plotting
+Descripti
+on
+Value buffers
+Color buffers
+changed
+dynamica
+lly
+DRAW_COLOR_ZIGZAG
+The
+DRAW_ZI
+GZAG
+style
+with the
+options
+of
+individua
+l coloring
+of
+sections
+and
+dynamic
+color
+changing
+2
+1
+DRAW_COLOR_BARS
+The
+DRAW_B
+ARS style
+with the
+options
+of
+individua
+l coloring
+of 
+bars
+and
+dynamic
+color
+changing
+4
+1
+DRAW_COLOR_CANDLES
+The
+DRAW_C
+ANDLES
+style
+with the
+options
+of
+individua
+l coloring
+of
+candlesti
+cks 
+and
+dynamic
+color
+changing
+4
+1
+
+
+--- Page 2567 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2567
+The difference between an indicator buffer and an array
+In each indicator, on its global level, you should declare one or more arrays of the double type, which
+then must be used as an indicator buffer using the SetIndexBuffer() function. To draw indicator plots,
+only the values ​of the indicator buffers are used, any other arrays cannot be used for this purpose. In
+addition, buffer values are displayed in the Data Window.
+An indicator buffer should be dynamic and does not require specification of the size – the size of the
+array used as the indicator buffer is set by the terminal execution subsystem automatically. 
+After the array is bound to the indicator buffer, the indexing direction is set by default like in ordinary
+arrays, but you can use the ArraySetAsSeries() function to change the way of access to the array
+elements. By default, the indicator buffer is used to store data used for plotting (INDICATOR_DATA).
+If the calculation of indicator values requires holding intermediate calculations and storing the
+additional values for each bar, then such an array can be declared as a calculation buffer during
+binding (INDICATOR_CALCULATIONS). For the intermediate values, you can also use a regular array,
+but in this case, the programmer has to manage the size of the array.
+Some plots allow setting a color for each bar. To store the information about color, color buffers are
+used (INDICATOR_COLOR_INDEX). The color is an integer type color, but all indicator buffers must be
+of type double. Values of color and auxiliary (INDICATOR_CALCULATIONS) buffers cannot be obtained
+by using CopyBuffer().
+The number of indicator buffers must be specified using the compiler directive #property
+indicator_buffers number_of_buffers:
+#property indicator_buffers 3  //  the indicator has 3 buffers
+The maximum allowed number of buffers in one indicator is 512.
+Relevance of Indicator Buffers and Plotting
+Each plotting is based on one or more indicator buffers. So, for displaying simple candlesticks, four
+values are required - Open, High, Low and Close prices. Accordingly, to display an indicator in the
+form of candlesticks, it is necessary to declare 4 indicator buffers and 4 arrays of the double type for
+them. For example:
+//--- The indicator has four indicator buffers
+#property indicator_buffers 4
+//--- The indicator has one plotting
+#property indicator_plots   1
+//--- Graphical plotting number 1 will appear as candlesticks
+#property indicator_type1   DRAW_CANDLES
+//--- Candlestick will be drawn in clrDodgerBlue
+#property indicator_color1  clrDodgerBlue
+//--- 4 arrays for the indicator buffers
+double OBuffer[];
+
+
+--- Page 2568 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2568
+double HBuffer[];
+double LBuffer[];
+double CBuffer[];
+Graphical plots automatically use indicator buffers in accordance with the plot number. Numbering of
+plots starts with 1, numbering of buffers starts with zero. If the first plotting requires 4 indicator
+buffers, then the first 4 indicator buffers will be used to draw it. These four buffers should be linked
+with the appropriate arrays with correct indexing using the SetIndexBuffer() function.
+//--- Binding arrays with indicator buffers
+   SetIndexBuffer(0,OBuffer,INDICATOR_DATA);  // The first buffer corresponds to the z
+   SetIndexBuffer(1,HBuffer,INDICATOR_DATA);  // The second buffer corresponds to inde
+   SetIndexBuffer(2,LBuffer,INDICATOR_DATA);  // The third buffer corresponds to index
+   SetIndexBuffer(3,CBuffer,INDICATOR_DATA);  // The fourth buffer corresponds to inde
+The plotting candlesticks, the indicator will use just the first four buffers, because plotting of
+"candlesticks" was announced under the first number.
+Change the example, and add plotting of a simple line - DRAW_LINE. Now suppose that the line is
+numbered 1, and the candlesticks are number 2. The number of buffers and the number of plots has
+increased.
+//--- The indicator has 5 indicator buffers
+#property indicator_buffers 5
+//--- The indicator has 2 plots
+#property indicator_plots   2
+//--- Plot 1 is a line
+#property indicator_type1   DRAW_LINE
+//--- The color of the line is clrDodgerRed
+#property indicator_color1  clrDodgerRed
+//--- Plot 2 is drawn as Japanese candlesticks
+#property indicator_type2   DRAW_CANDLES
+//--- The color of the candlesticks is clrDodgerBlue
+#property indicator_color2  clrDodgerBlue
+//--- 5 arrays for indicator buffers
+double LineBuffer[];
+double OBuffer[];
+double HBuffer[];
+double LBuffer[];
+double CBuffer[];
+The order of the plots has changed, and now the line comes first, followed by Japanese candlesticks.
+Therefore, the order of the buffers is appropriate - first we announce a buffer for the line with the
+zero index, and then four buffers for the candlesticks.
+   SetIndexBuffer(0,LineBuffer,INDICATOR_DATA);  // The first buffer corresponds to in
+//--- Binding arrays with indicator buffers for the candlesticks
+   SetIndexBuffer(1,OBuffer,INDICATOR_DATA);     // The second buffer corresponds to i
+   SetIndexBuffer(2,HBuffer,INDICATOR_DATA);     // The third buffer corresponds to in
+   SetIndexBuffer(3,LBuffer,INDICATOR_DATA);     // The fourth buffer corresponds to i
+
+
+--- Page 2569 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2569
+   SetIndexBuffer(4,CBuffer,INDICATOR_DATA);     // The fifth buffer corresponds to in
+The number of buffers and plots can be set only by using compiler directives, it is impossible to
+change these properties dynamically using functions.
+Color Versions of Styles
+As can be seen in the table, the styles are divided into two groups. The first group includes styles in
+whose name there is no word COLOR, we call these styles basic:
+· DRAW_LINE
+· DRAW_SECTION
+· DRAW_HISTOGRAM
+· DRAW_HISTOGRAM2
+· DRAW_ARROW
+· DRAW_ZIGZAG
+· DRAW_FILLING
+· DRAW_BARS
+· DRAW_CANDLES
+In the second group, the style names contain the word COLOR, let's call them color versions:
+· DRAW_COLOR_LINE
+· DRAW_COLOR_SECTION
+· DRAW_COLOR_HISTOGRAM
+· DRAW_COLOR_HISTOGRAM2
+· DRAW_COLOR_ARROW
+· DRAW_COLOR_ZIGZAG
+· DRAW_COLOR_BARS
+· DRAW_COLOR_CANDLES
+All color versions of styles differ from the basic ones in that they allow specifying a color for each part
+of the plotting. The minimal part of plotting is a bar, so we can say that the color versions allow
+setting the color on each bar.
+Exceptions are styles DRAW_NONE and DRAW_FILLING, they do not have color versions.
+To set the plotting color on each bar, an additional buffer for storing the color index has been added to
+the color version. These indices indicate the number of a color in a special array, which contains a
+predefined set of colors. The size of the array of colors is 64. This means that each color version of a
+style allows painting a plot in 64 different colors.
+The set and the number of colors in the special array of colors can be set via a compiler directive
+#property indicator_color, where you can specify all the necessary colors separated by commas. For
+example, such an entry in an indicator:
+
+
+--- Page 2570 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2570
+//--- Define 8 colors for coloring candlesticks (they are stored in the special array)
+#property indicator_color1  clrRed,clrBlue,clrGreen,clrYellow,clrMagenta,clrCyan,clrLi
+It states that for plotting 1, 8 colors are set, which will be placed in a special array. Further in the
+program we will not specify the color of the plotting, but only its index. If we want to set red color for
+the bar number K, the color index value from an array should be set in the color buffer of the
+indicator. The red color is specified first in the directive, it corresponds to the index number 0.
+  //--- set the candlestick color clrRed
+  col_buffer[buffer_index]=0;
+The set of colors is not given once and for all, it can be changed dynamically using
+PlotIndexSetInteger(). Example:
+      //--- Set the color for each index as the property PLOT_LINE_COLOR
+      PlotIndexSetInteger(0,                    //  The number of a graphical style
+                          PLOT_LINE_COLOR,      //  Property identifier
+                          plot_color_ind,       //  The index of the color, where we w
+                          color_array[i]);      //  A new color
+Properties of the indicator and plotting
+For indicator plots, properties can be set by means of compiler directives and using the appropriate
+functions. Read more information about this in Connection between Indicator Properties and
+Functions. Dynamic change of indicator properties using special functions allows creating more flexible
+custom indicators. 
+Start of Indicator Drawing on the Chart
+In many cases, according to the conditions of the algorithm, it is impossible to start calculating the
+indicator values immediately with the current bar, since it is necessary to provide a minimum number
+of previous bars available in history. For example, many types of smoothing imply using an array of
+prices over the previous N bars, and on the basis of these values, the indicator value on the current
+bar is calculated.
+In such cases, either there is no way to calculate the indicator values for the first N bars, or these
+values are not intended to be displayed on the chart and are only subsidiary for calculating further
+values. To avoid plotting of the indicator on the first N bars of the history, set the N value to the
+PLOT_DRAW_BEGIN property for the corresponding plot:
+//--- Binding arrays with indicator buffers for the candlesticks
+PlotIndexSetInteger(number_of_plot,PLOT_DRAW_BEGIN,N);
+Here:
+· number_of_plot – a value from zero to indicator_plots-1 (numbering of plots starts with zero).
+· N - the number of first bars in the history, on which the indicator should not be displayed on the
+chart.
+
+
+--- Page 2571 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2571
+
+
+--- Page 2572 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2572
+DRAW_NONE
+The DRAW_NONE style is designed for use in cases where it is necessary to calculate the values of a
+buffer and show them in the Data Window, but plotting on the chart is not required. To set up the
+accuracy use the expression IndicatorSetInteger(INDICATOR_DIGITS,num_chars) in the OnInit()
+function:
+int OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,InvisibleBuffer,INDICATOR_DATA);
+//--- Set the accuracy of values to be displayed in the Data Window
+   IndicatorSetInteger(INDICATOR_DIGITS,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+The number of buffers required for plotting DRAW_NONE is 1.
+An example of the indicator that shows the number of the bar on which the mouse currently hovers in
+the Data Window. The numbering corresponds to the timeseries, meaning the current unfinished bar
+has the zero index, and the oldest bar has the largest index.
+Note that despite the fact that, for red color is set plotting #1, the indicator does not draw anything
+on the chart.
+//+------------------------------------------------------------------+
+//|                                                    DRAW_NONE.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+
+
+--- Page 2573 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2573
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- plot Invisible
+#property indicator_label1  "Bar Index"
+#property indicator_type1   DRAW_NONE
+#property indicator_style1  STYLE_SOLID
+#property indicator_color1  clrRed
+#property indicator_width1  1
+//--- indicator buffers
+double         InvisibleBuffer[];
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- Binding an array and an indicator buffer
+   SetIndexBuffer(0,InvisibleBuffer,INDICATOR_DATA);
+//--- Set the accuracy of values to be displayed in the Data Window
+   IndicatorSetInteger(INDICATOR_DIGITS,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   static datetime lastbar=0;
+//--- If this is the first calculation of the indicator
+   if(prev_calculated==0)
+     {
+      //--- Renumber the bars for the first time
+      CalcValues(rates_total,close);
+      //--- Remember the opening time of the current bar in lastbar
+      lastbar=(datetime)SeriesInfoInteger(_Symbol,_Period,SERIES_LASTBAR_DATE);
+
+
+--- Page 2574 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2574
+     }
+   else
+     {
+      //--- If a new bar has appeared, its open time differs from lastbar
+      if(lastbar!=SeriesInfoInteger(_Symbol,_Period,SERIES_LASTBAR_DATE))
+        {
+         //--- Renumber the bars once again
+         CalcValues(rates_total,close);
+         //--- Update the opening time of the current bar in lastbar
+         lastbar=(datetime)SeriesInfoInteger(_Symbol,_Period,SERIES_LASTBAR_DATE);
+        }
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Number the bars like in a timeseries                             |
+//+------------------------------------------------------------------+
+void CalcValues(int total,double const  &array[])
+  {
+//--- Set indexing of the indicator buffer like in a timeseries
+   ArraySetAsSeries(InvisibleBuffer,true);
+//--- Fill in each bar with its number
+   for(int i=0;i<total;i++) InvisibleBuffer[i]=i;
+  }
+
+
+--- Page 2575 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2575
+DRAW_LINE
+DRAW_LINE draws a line of the specified color by the values of the indicator buffer. The width, style
+and color of the line can be set using the compiler directives and dynamically using the
+PlotIndexSetInteger() function. Dynamic changes of the plotting properties allows "to enliven"
+indicators, so that their appearance changes depending on the current situation.
+The number of buffers required for plotting DRAW_LINE is 1.
+An example of the indicator that draws a line using Close prices of bars. The line color, width and style
+change randomly every N=5 ticks.
+Note that initially for plot1 with DRAW_LINE the properties are set using the compiler directive
+#property, and then in the OnCalculate() function these three properties are set randomly. The N
+parameter is set in external parameters of the indicator for the possibility of manual configuration
+(the Parameters tab in the indicator's Properties window).
+//+------------------------------------------------------------------+
+//|                                                    DRAW_LINE.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "An indicator to demonstrate DRAW_LINE"
+#property description "It draws a line of a specified color at Close prices"
+#property description "Color, width and style of lines is changed randomly"
+#property description "after every N ticks"
+
+
+--- Page 2576 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2576
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- Line properties are set using the compiler directives
+#property indicator_label1  "Line"      // Name of a plot for the Data Window
+#property indicator_type1   DRAW_LINE   // Type of plotting is line
+#property indicator_color1  clrRed      // Line color
+#property indicator_style1  STYLE_SOLID // Line style
+#property indicator_width1  1           // Line Width
+//--- input parameter
+input int      N=5;         // Number of ticks to change 
+//--- An indicator buffer for the plot
+double         LineBuffer[];
+//--- An array to store colors
+color colors[]={clrRed,clrBlue,clrGreen};
+//--- An array to store the line styles
+ENUM_LINE_STYLE styles[]={STYLE_SOLID,STYLE_DASH,STYLE_DOT,STYLE_DASHDOT,STYLE_DASHDOT
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- Binding an array and an indicator buffer
+   SetIndexBuffer(0,LineBuffer,INDICATOR_DATA);
+//--- Initializing the generator of pseudo-random numbers
+   MathSrand(GetTickCount());
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   static int ticks=0;
+//--- Calculate ticks to change the style, color and width of the line
+   ticks++;
+//--- If a critical number of ticks has been accumulated
+   if(ticks>=N)
+     {
+
+
+--- Page 2577 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2577
+      //--- Change the line properties
+      ChangeLineAppearance();
+      //--- Reset the counter of ticks to zero
+      ticks=0;
+     }
+//--- Block for calculating indicator values
+   for(int i=0;i<rates_total;i++)
+     {
+      LineBuffer[i]=close[i];
+     }
+//--- Return the prev_calculated value for the next call of the function
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Changes the appearance of the drawn line in the indicator        |
+//+------------------------------------------------------------------+
+void ChangeLineAppearance()
+  {
+//--- A string for the formation of information about the line properties
+   string comm="";
+//--- A block for changing the color of the line
+//--- Get a random number
+   int number=MathRand();
+//--- The divisor is equal to the size of the colors[] array
+   int size=ArraySize(colors);
+//--- Get the index to select a new color as the remainder of integer division
+   int color_index=number%size;
+//--- Set the color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_COLOR,colors[color_index]);
+//--- Write the line color
+   comm=comm+(string)colors[color_index];
+//--- A block for changing the width of the line
+   number=MathRand();
+//--- Get the width of the remainder of integer division
+   int width=number%5; // The width is set from 0 to 4
+//--- Set the color as the PLOT_LINE_WIDTH property
+   PlotIndexSetInteger(0,PLOT_LINE_WIDTH,width);
+//--- Write the line width
+   comm=comm+", Width="+IntegerToString(width);
+//--- A block for changing the style of the line
+   number=MathRand();
+//--- The divisor is equal to the size of the styles array
+   size=ArraySize(styles);
+//--- Get the index to select a new style as the remainder of integer division
+   int style_index=number%size;
+
+
+--- Page 2578 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2578
+//--- Set the color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_STYLE,styles[style_index]);
+//--- Write the line style
+   comm=EnumToString(styles[style_index])+", "+comm;
+//--- Show the information on the chart using a comment
+   Comment(comm);
+  }
+
+
+--- Page 2579 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2579
+DRAW_SECTION
+DRAW_SECTION draws sections of the specified color by the values of the indicator buffer. The width,
+color and style of the line can be specified like for the DRAW_LINE style - using compiler directives or
+dynamically using the PlotIndexSetInteger() function. Dynamic changes of the plotting properties allows
+"to enliven" indicators, so that their appearance changes depending on the current situation.
+Sections are drawn from one non-empty value to another non-empty value of the indicator buffer,
+empty values are ignored. To specify what value should be considered as "empty", set this value in the
+PLOT_EMPTY_VALUE property: For example, if the indicator should be drawn as a sequence of sections
+on non-zero values, then you need to set the zero value as an empty one:
+//--- The 0 (empty) value will mot participate in drawing
+   PlotIndexSetDouble(index_of_plot_DRAW_SECTION,PLOT_EMPTY_VALUE,0);
+Always explicitly fill in the values of the indicator buffers, set an empty value in a buffer to the
+elements that should not be plotted.
+The number of buffers required for plotting DRAW_SECTION is 1.
+An example of the indicator that draws sections between the High and Low prices. The color, width
+and style of all sections change randomly every N ticks. 
+Note that initially for plot1 with DRAW_SECTION the properties are set using the compiler directive
+#property, and then in the OnCalculate() function these three properties are set randomly. The N
+parameter is set in external parameters of the indicator for the possibility of manual configuration
+(the Parameters tab in the indicator's Properties window).
+//+------------------------------------------------------------------+
+//|                                                 DRAW_SECTION.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+
+
+--- Page 2580 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2580
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "An indicator to demonstrate DRAW_SECTION"
+#property description "Draws straight sections every bars bars"
+#property description "The color, width and style of sections are changed randomly"
+#property description "after every N ticks"
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- plot Section
+#property indicator_label1  "Section"
+#property indicator_type1   DRAW_SECTION
+#property indicator_color1  clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- input parameter
+input int      bars=5;           // The length of sections in bars
+input int      N=5;              // The number of ticks to change the style of section
+//--- An indicator buffer for the plot
+double         SectionBuffer[];
+//--- An auxiliary variable to calculate ends of sections
+int            divider;
+//--- An array to store colors
+color colors[]={clrRed,clrBlue,clrGreen};
+//--- An array to store the line styles
+ENUM_LINE_STYLE styles[]={STYLE_SOLID,STYLE_DASH,STYLE_DOT,STYLE_DASHDOT,STYLE_DASHDOT
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- Binding an array and an indicator buffer
+   SetIndexBuffer(0,SectionBuffer,INDICATOR_DATA);
+//--- The 0 (empty) value will mot participate in drawing
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+//--- Check the indicator parameter
+   if(bars<=0)
+     {
+      PrintFormat("Invalid value of parameter bar=%d",bars);
+      return(INIT_PARAMETERS_INCORRECT);
+     }
+   else divider=2*bars;
+//---+
+   return(INIT_SUCCEEDED);
+  }
+
+
+--- Page 2581 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2581
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   static int ticks=0;
+//--- Calculate ticks to change the style, color and width of the line
+   ticks++;
+//--- If a critical number of ticks has been accumulated
+   if(ticks>=N)
+     {
+      //--- Change the line properties
+      ChangeLineAppearance();
+      //--- Reset the counter of ticks to zero
+      ticks=0;
+     }
+//--- The number of the bar from which the calculation of indicator values starts
+   int start=0;
+//--- If the indicator has been calculated before, then set start on the previous bar
+   if(prev_calculated>0) start=prev_calculated-1;
+//--- Here are all the calculations of the indicator values
+   for(int i=start;i<rates_total;i++)
+     {
+      //--- Get a remainder of the division of the bar number by 2*bars
+      int rest=i%divider;
+      //--- If the bar number is divisible by 2*bars
+      if(rest==0)
+        {
+         //--- Set the end of the section at the High price of this bar
+         SectionBuffer[i]=high[i];
+        }
+      //---If the remainder of the division is equal to bars, 
+      else
+        {
+         //--- Set the end of the section at the High price of this bar
+         if(rest==bars) SectionBuffer[i]=low[i];
+         //--- If nothing happened, ignore the bar - set 0
+         else SectionBuffer[i]=0;
+        }
+
+
+--- Page 2582 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2582
+     }
+//--- Return the prev_calculated value for the next call of the function
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Changes the appearance of sections in the indicator              |
+//+------------------------------------------------------------------+
+void ChangeLineAppearance()
+  {
+//--- A string for the formation of information about the line properties
+   string comm="";
+//--- A block of line color change
+   int number=MathRand(); // Get a random number
+//--- The divisor is equal to the size of the colors[] array
+   int size=ArraySize(colors);
+//--- Get the index to select a new color as the remainder of integer division
+   int color_index=number%size;
+//--- Set the color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_COLOR,colors[color_index]);
+//--- Write the line color
+   comm=comm+"\r\n"+(string)colors[color_index];
+//--- A block for changing the width of the line
+   number=MathRand();
+//--- Get the width of the remainder of integer division
+   int width=number%5;   // The width is set from 0 to 4
+//--- Set the width
+   PlotIndexSetInteger(0,PLOT_LINE_WIDTH,width);
+//--- Write the line width
+   comm=comm+"\r\nWidth="+IntegerToString(width);
+//--- A block for changing the style of the line
+   number=MathRand();
+//--- The divisor is equal to the size of the styles array
+   size=ArraySize(styles);
+//--- Get the index to select a new style as the remainder of integer division
+   int style_index=number%size;
+//--- Set the line style
+   PlotIndexSetInteger(0,PLOT_LINE_STYLE,styles[style_index]);
+//--- Write the line style
+   comm="\r\n"+EnumToString(styles[style_index])+""+comm;
+//--- Show the information on the chart using a comment
+   Comment(comm);
+  }
+
+
+--- Page 2583 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2583
+DRAW_HISTOGRAM
+The DRAW_HISTOGRAM style draws a histogram as a sequence of columns of a specified color from
+zero to a specified value. Values are taken from the indicator buffer. The width, color and style of the
+column can be specified like for the DRAW_LINE style - using compiler directives or dynamically using
+the PlotIndexSetInteger() function. Dynamic changes of the plotting properties allows changing the
+look of the histogram based on the current situation.
+Since a column from the zero level is drawn on each bar, DRAW_HISTOGRAM should better be used in
+a separate chart window. Most often this type of plotting is used to create indicators of the oscillator
+type, for example, Bears Power or OsMA. For the empty non-displayable values the zero value should
+be specified.
+The number of buffers required for plotting DRAW_HISTOGRAM is 1.
+An example of the indicator that draws a sinusoid of a specified color based on the MathSin() function.
+The color, width and style of all histogram columns change randomly each N ticks. The bars parameter
+specifies the period of the sinusoid, that is after the specified number of bars the sinusoid will repeat
+the cycle.
+Note that initially for plot1 with DRAW_HISTOGRAM the properties are set using the compiler
+directive #property, and then in the OnCalculate() function these three properties are set randomly.
+The N parameter is set in external parameters of the indicator for the possibility of manual
+configuration (the Parameters tab in the indicator's Properties window).
+//+------------------------------------------------------------------+
+//|                                               DRAW_HISTOGRAM.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+
+
+--- Page 2584 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2584
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "An indicator to demonstrate DRAW_HISTOGRAM"
+#property description "It draws a sinusoid as a histogram in a separate window"
+#property description "The color and width of columns are changed randomly"
+#property description "after every N ticks"
+#property description "The bars parameter sets the number of bars in the cycle of the 
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- plot Histogram
+#property indicator_label1  "Histogram"
+#property indicator_type1   DRAW_HISTOGRAM
+#property indicator_color1  clrBlue
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- input parameters
+input int      bars=30;          // The period of a sinusoid in bars
+input int      N=5;              // The number of ticks to change the histogram
+//--- indicator buffers
+double         HistogramBuffer[];
+//--- A factor to get the 2Pi angle in radians, when multiplied by the bars parameter
+double    multiplier;
+//--- An array to store colors
+color colors[]={clrRed,clrBlue,clrGreen};
+//--- An array to store the line styles
+ENUM_LINE_STYLE styles[]={STYLE_SOLID,STYLE_DASH,STYLE_DOT,STYLE_DASHDOT,STYLE_DASHDOT
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,HistogramBuffer,INDICATOR_DATA);
+//--- Calculate the multiplier
+   if(bars>1)multiplier=2.*M_PI/bars;
+   else
+     {
+      PrintFormat("Set the value of bars=%d greater than 1",bars);
+      //--- Early termination of the indicator
+      return(INIT_PARAMETERS_INCORRECT);
+     }
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+
+
+--- Page 2585 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2585
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   static int ticks=0;
+//--- Calculate ticks to change the style, color and width of the line
+   ticks++;
+//--- If a critical number of ticks has been accumulated
+   if(ticks>=N)
+     {
+      //--- Change the line properties
+      ChangeLineAppearance();
+      //--- Reset the counter of ticks to zero
+      ticks=0;
+     }
+//--- Calculate the indicator values
+   int start=0;
+//--- If already calculated during the previous starts of OnCalculate
+   if(prev_calculated>0) start=prev_calculated-1; // set the beginning of the calculat
+//--- Fill in the indicator buffer with values
+   for(int i=start;i<rates_total;i++)
+     {
+      HistogramBuffer[i]=sin(i*multiplier);
+     }
+//--- Return the prev_calculated value for the next call of the function
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Changes the appearance of lines in the indicator                 |
+//+------------------------------------------------------------------+
+void ChangeLineAppearance()
+  {
+//--- A string for the formation of information about the line properties
+   string comm="";
+//--- A block for changing the color of the line
+   int number=MathRand(); // Get a random number
+//--- The divisor is equal to the size of the colors[] array
+   int size=ArraySize(colors);
+//--- Get the index to select a new color as the remainder of integer division
+   int color_index=number%size;
+
+
+--- Page 2586 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2586
+//--- Set the color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_COLOR,colors[color_index]);
+//--- Write the line color
+   comm=comm+"\r\n"+(string)colors[color_index];
+//--- A block for changing the width of the line
+   number=MathRand();
+//--- Get the width of the remainder of integer division
+   int width=number%5;   // The width is set from 0 to 4
+//--- Set the width
+   PlotIndexSetInteger(0,PLOT_LINE_WIDTH,width);
+//--- Write the line width
+   comm=comm+"\r\nWidth="+IntegerToString(width);
+//--- A block for changing the style of the line
+   number=MathRand();
+//--- The divisor is equal to the size of the styles array
+   size=ArraySize(styles);
+//--- Get the index to select a new style as the remainder of integer division
+   int style_index=number%size;
+//--- Set the line style
+   PlotIndexSetInteger(0,PLOT_LINE_STYLE,styles[style_index]);
+//--- Write the line style
+   comm="\r\n"+EnumToString(styles[style_index])+""+comm;
+//--- Show the information on the chart using a comment
+   Comment(comm);
+  }
+
+
+--- Page 2587 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2587
+DRAW_HISTOGRAM2
+The DRAW_HISTOGRAM2 style draws a histogram of a specified color – vertical segments using the
+values of two indicator buffers. The width, color and style of the segments can be specified like for
+the DRAW_LINE style - using compiler directives or dynamically using the PlotIndexSetInteger()
+function. Dynamic changes of the plotting properties allows changing the look of the histogram based
+on the current situation.
+The DRAW_HISTOGRAM2 style can be used in a separate subwindow of a chart and in its main window.
+For empty values nothing is drawn, all the values in the indicator buffers need to be set explicitly.
+Buffers are not initialized with a zero value.
+The number of buffers required for plotting DRAW_HISTOGRAM2 is 2.
+An example of the indicator that plots a vertical segment of the specified color and width between the
+Open and Close prices of each bar. The color, width and style of all histogram columns change
+randomly each N ticks. During the start of the indicator, in the OnInit() function, the number of the
+day of week for which the histogram will not be drawn - invisible_day - is set randomly. For this
+purpose an empty value is set PLOT_EMPTY_VALUE=0:
+//--- Set an empty value
+   PlotIndexSetDouble(index_of_plot_DRAW_SECTION,PLOT_EMPTY_VALUE,0);
+Note that initially for plot1 with DRAW_HISTOGRAM2 the properties are set using the compiler
+directive #property, and then in the OnCalculate() function these three properties are set randomly.
+The N parameter is set in external parameters of the indicator for the possibility of manual
+configuration (the Parameters tab in the indicator's Properties window).
+//+------------------------------------------------------------------+
+//|                                              DRAW_HISTOGRAM2.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+
+
+--- Page 2588 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2588
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "An indicator to demonstrate DRAW_HISTOGRAM2"
+#property description "It draws a segment between Open and Close on each bar"
+#property description "The color, width and style are changed randomly"
+#property description "after every N ticks"
+#property indicator_chart_window
+#property indicator_buffers 2
+#property indicator_plots   1
+//--- plot Histogram_2
+#property indicator_label1  "Histogram_2"
+#property indicator_type1   DRAW_HISTOGRAM2
+#property indicator_color1  clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- input parameters
+input int      N=5;              // The number of ticks to change the histogram
+//--- indicator buffers
+double         Histogram_2Buffer1[];
+double         Histogram_2Buffer2[];
+//--- The day of the week for which the indicator is not plotted
+int invisible_day;
+//--- An array to store colors
+color colors[]={clrRed,clrBlue,clrGreen};
+//--- An array to store the line styles
+ENUM_LINE_STYLE styles[]={STYLE_SOLID,STYLE_DASH,STYLE_DOT,STYLE_DASHDOT,STYLE_DASHDOT
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,Histogram_2Buffer1,INDICATOR_DATA);
+   SetIndexBuffer(1,Histogram_2Buffer2,INDICATOR_DATA);
+//--- Set an empty value
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+//--- Get a random number from 0 to 5
+   invisible_day=MathRand()%6;
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+
+
+--- Page 2589 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2589
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   static int ticks=0;
+//--- Calculate ticks to change the style, color and width of the line
+   ticks++;
+//--- If a critical number of ticks has been accumulated
+   if(ticks>=N)
+     {
+      //--- Change the line properties
+      ChangeLineAppearance();
+      //--- Reset the counter of ticks to zero
+      ticks=0;
+     }
+//--- Calculate the indicator values
+   int start=0;
+//--- To get the day of week by the open price of each bar
+   MqlDateTime dt;
+//--- If already calculated during the previous starts of OnCalculate
+   if(prev_calculated>0) start=prev_calculated-1; // set the beginning of the calculat
+//--- Fill in the indicator buffer with values
+   for(int i=start;i<rates_total;i++)
+     {
+      TimeToStruct(time[i],dt);
+      if(dt.day_of_week==invisible_day)
+        {
+         Histogram_2Buffer1[i]=0;
+         Histogram_2Buffer2[i]=0;
+        }
+      else
+        {
+         Histogram_2Buffer1[i]=open[i];
+         Histogram_2Buffer2[i]=close[i];
+        }
+     }
+//--- Return the prev_calculated value for the next call of the function
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Changes the appearance of lines in the indicator                 |
+//+------------------------------------------------------------------+
+
+
+--- Page 2590 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2590
+void ChangeLineAppearance()
+  {
+//--- A string for the formation of information about the line properties
+   string comm="";
+//--- A block of line color change
+   int number=MathRand(); // Get a random number
+//--- The divisor is equal to the size of the colors[] array
+   int size=ArraySize(colors);
+//--- Get the index to select a new color as the remainder of integer division
+   int color_index=number%size;
+//--- Set the color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_COLOR,colors[color_index]);
+//--- Write the line color
+   comm=comm+"\r\n"+(string)colors[color_index];
+//--- A block for changing the width of the line
+   number=MathRand();
+//--- Get the width of the remainder of integer division
+   int width=number%5;   // The width is set from 0 to 4
+//--- Set the line width
+   PlotIndexSetInteger(0,PLOT_LINE_WIDTH,width);
+//--- Write the line width
+   comm=comm+"\r\nWidth="+IntegerToString(width);
+//--- A block for changing the style of the line
+   number=MathRand();
+//--- The divisor is equal to the size of the styles array
+   size=ArraySize(styles);
+//--- Get the index to select a new style as the remainder of integer division
+   int style_index=number%size;
+//--- Set the line style
+   PlotIndexSetInteger(0,PLOT_LINE_STYLE,styles[style_index]);
+//--- Write the line style
+   comm="\r\n"+EnumToString(styles[style_index])+""+comm;
+//--- Add information about the day that is omitted in calculations
+   comm="\r\nNot plotted day - "+EnumToString((ENUM_DAY_OF_WEEK)invisible_day)+comm;
+//--- Show the information on the chart using a comment
+   Comment(comm);
+  }
+
+
+--- Page 2591 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2591
+DRAW_ARROW
+The DRAW_ARROW style draws arrows of the specified color (symbols of the set Wingdings) based on
+the value of the indicator buffer. The width and color of the symbols can be specified like for the
+DRAW_LINE style - using compiler directives or dynamically using the PlotIndexSetInteger() function.
+Dynamic changes of the plotting properties allows changing the look of an indicator based on the
+current situation.
+The symbol code is set using the PLOT_ARROW property. 
+//--- Define the symbol code from the Wingdings font to draw in PLOT_ARROW
+   PlotIndexSetInteger(0,PLOT_ARROW,code);
+The default value of PLOT_ARROW=159 (a circle).
+Each arrow is actually a symbol that has the height and the anchor point, and can cover some
+important information on a chart (for example, the closing price at the bar). Therefore, we can
+additionally specify the vertical shift in pixels, which does not depend on the scale of the chart. The
+arrows will be shifted down by the specified number of pixels, although the values of the indicator will
+remain the same:
+//--- Set the vertical shift of arrows in pixels
+   PlotIndexSetInteger(0,PLOT_ARROW_SHIFT,shift);
+A negative value of PLOT_ARROW_SHIFT means the shift of arrows upwards, a positive values shifts
+the arrow down.
+The DRAW_ARROW style can be used in a separate subwindow of a chart and in its main window.
+Empty values are not drawn and do not appear in the "Data Window", all the values in the indicator
+buffers should be set explicitly. Buffers are not initialized with a zero value.
+//--- Set an empty value
+   PlotIndexSetDouble(index_of_plot_DRAW_ARROW,PLOT_EMPTY_VALUE,0);
+The number of buffers required for plotting DRAW_ARROW is 1.
+An example of the indicator, which draws arrows on each bar with the close price higher than the close
+price of the previous bar. The color, width, shift and symbol code of all arrows are changed randomly
+every N ticks.
+
+
+--- Page 2592 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2592
+In the example, for plot1 with the DRAW_ARROW style, the properties, color and size are specified
+using the compiler directive #property, and then in the OnCalculate() function the properties are set
+randomly. The N parameter is set in external parameters of the indicator for the possibility of manual
+configuration (the Parameters tab in the indicator's Properties window).
+//+------------------------------------------------------------------+
+//|                                                   DRAW_ARROW.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "An indicator to demonstrate DRAW_ARROW"
+#property description "Draws arrows set by Unicode characters, on a chart"
+#property description "The color, size, shift and symbol code of the arrow are changed
+#property description "after every N ticks"
+#property description "The code parameter sets the base value: code=159 (a circle)"
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- plot Arrows
+#property indicator_label1  "Arrows"
+#property indicator_type1   DRAW_ARROW
+#property indicator_color1  clrGreen
+#property indicator_width1  1
+//--- input parameters
+input int      N=5;         // Number of ticks to change 
+
+
+--- Page 2593 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2593
+input ushort   code=159;    // Symbol code to draw in DRAW_ARROW
+//--- An indicator buffer for the plot
+double         ArrowsBuffer[];
+//--- An array to store colors
+color colors[]={clrRed,clrBlue,clrGreen};
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,ArrowsBuffer,INDICATOR_DATA);
+//--- Define the symbol code for drawing in PLOT_ARROW
+   PlotIndexSetInteger(0,PLOT_ARROW,code);
+//--- Set the vertical shift of arrows in pixels
+   PlotIndexSetInteger(0,PLOT_ARROW_SHIFT,5);
+//--- Set as an empty value 0
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   static int ticks=0;
+//--- Calculate ticks to change the color, size, shift and code of the arrow
+   ticks++;
+//--- If a critical number of ticks has been accumulated
+   if(ticks>=N)
+     {
+      //--- Change the line properties
+      ChangeLineAppearance();
+      //--- Reset the counter of ticks to zero
+      ticks=0;
+     }
+//--- Block for calculating indicator values
+   int start=1;
+
+
+--- Page 2594 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2594
+   if(prev_calculated>0) start=prev_calculated-1;
+//--- Calculation loop
+   for(int i=1;i<rates_total;i++)
+     {
+      //--- If the current Close price is higher than the previous one, draw an arrow
+      if(close[i]>close[i-1])
+         ArrowsBuffer[i]=close[i];
+      //--- Otherwise specify the zero value
+      else
+         ArrowsBuffer[i]=0;
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Change the appearance of symbols in the indicator                |
+//+------------------------------------------------------------------+
+void ChangeLineAppearance()
+  {
+//--- A string for the formation of information about the indicator properties
+   string comm="";
+//--- A block for changing the arrow color
+   int number=MathRand(); // Get a random number
+//--- The divisor is equal to the size of the colors[] array
+   int size=ArraySize(colors);
+//--- Get the index to select a new color as the remainder of integer division
+   int color_index=number%size;
+//--- Set the color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_COLOR,colors[color_index]);
+//--- Write the line color
+   comm=comm+"\r\n"+(string)colors[color_index];
+//--- A block for changing the size arrows
+   number=MathRand();
+//--- Get the width of the remainder of integer division
+   int width=number%5;   // The size is set from 0 to 4
+//--- Set the color as the PLOT_LINE_WIDTH property
+   PlotIndexSetInteger(0,PLOT_LINE_WIDTH,width);
+//--- Write the arrow size
+   comm=comm+"\r\nWidth="+IntegerToString(width);
+//--- A block for changing the arrow code (PLOT_ARROW)
+   number=MathRand();
+//--- Get the remainder of integer division to calculate a new code of the arrow (from
+   int code_add=number%20;
+//--- Set the new symbol code as the result of code+code_add
+   PlotIndexSetInteger(0,PLOT_ARROW,code+code_add);
+//--- Write the symbol code PLOT_ARROW
+   comm="\r\n"+"PLOT_ARROW="+IntegerToString(code+code_add)+comm;
+
+
+--- Page 2595 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2595
+//--- A block for changing the vertical shift of arrows in pixels
+   number=MathRand();
+//--- Get the shift as the remainder of the integer division
+   int shift=20-number%41;
+//--- Set the new shift from -20 to 20
+   PlotIndexSetInteger(0,PLOT_ARROW_SHIFT,shift);
+//--- Write the shift PLOT_ARROW_SHIFT
+   comm="\r\n"+"PLOT_ARROW_SHIFT="+IntegerToString(shift)+comm;
+//--- Show the information on the chart using a comment
+   Comment(comm);
+  }
+
+
+--- Page 2596 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2596
+DRAW_ZIGZAG
+The DRAW_ZIGZAG style draws segments of a specified color based on the values of two indicator
+buffers. This style is very similar to DRAW_SECTION, but unlike the latter, it allows drawing vertical
+segments within one bar, if values ​of both indicator buffers are set for this bar. The segments are
+plotted from a value in the first buffer to a value in the second indicator buffer. None of the buffers
+can contain only empty values, since in this case nothing is plotted.
+The width, color and style of the line can be specified like for the DRAW_SECTION style - using
+compiler directives or dynamically using the PlotIndexSetInteger() function. Dynamic changes of the
+plotting properties allows "to enliven" indicators, so that their appearance changes depending on the
+current situation.
+Sections are drawn from a non-empty value of one buffer to a non-empty value of another indicator
+buffer. To specify what value should be considered as "empty", set this value in the
+PLOT_EMPTY_VALUE property:
+//--- The 0 (empty) value will mot participate in drawing
+   PlotIndexSetDouble(index_of_plot_DRAW_ZIGZAG,PLOT_EMPTY_VALUE,0);
+Always explicitly fill in the values of the indicator buffers, set an empty value in a buffer to skip bars.
+The number of buffers required for plotting DRAW_ZIGZAG is 2.
+An example of the indicator that plots a saw based on the High and Low prices. The color, width and
+style of the zigzag lines change randomly every N ticks.
+Note that initially for plot1 with DRAW_ZIGZAG the properties are set using the compiler directive
+#property, and then in the OnCalculate() function these properties are set randomly. The N parameter
+is set in external parameters of the indicator for the possibility of manual configuration (the
+Parameters tab in the indicator's Properties window).
+
+
+--- Page 2597 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2597
+//+------------------------------------------------------------------+
+//|                                                  DRAW_ZIGZAG.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "An indicator to demonstrate DRAW_ZIGZAG"
+#property description "It draws a \"saw\" as straight segments, skipping the bars of o
+#property description "The day to skip is selected randomly during indicator start"
+#property description "The color, width and style of segments are changed randomly"
+#property description " every N ticks"
+#property indicator_separate_window
+#property indicator_buffers 2
+#property indicator_plots   1
+//--- plot ZigZag
+#property indicator_label1  "ZigZag"
+#property indicator_type1   DRAW_ZIGZAG
+#property indicator_color1  clrBlue
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- input parameters
+input int      N=5;              // Number of ticks to change 
+//--- indicator buffers
+double         ZigZagBuffer1[];
+double         ZigZagBuffer2[];
+//--- The day of the week for which the indicator is not plotted
+int invisible_day;
+//--- An array to store colors
+color colors[]={clrRed,clrBlue,clrGreen};
+//--- An array to store the line styles
+ENUM_LINE_STYLE styles[]={STYLE_SOLID,STYLE_DASH,STYLE_DOT,STYLE_DASHDOT,STYLE_DASHDOT
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- Binding arrays and indicator buffers
+   SetIndexBuffer(0,ZigZagBuffer1,INDICATOR_DATA);
+   SetIndexBuffer(1,ZigZagBuffer2,INDICATOR_DATA);
+//--- Get a random value from 0 to 6, for this day the indicator is not plotted
+   invisible_day=MathRand()%6;
+//--- The 0 (empty) value will mot participate in drawing
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+//--- The 0 (empty) value will mot participate in drawing
+   PlotIndexSetString(0,PLOT_LABEL,"ZigZag1;ZigZag2");
+
+
+--- Page 2598 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2598
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   static int ticks=0;
+//--- Calculate ticks to change the style, color and width of the line
+   ticks++;
+//--- If a sufficient number of ticks has been accumulated
+   if(ticks>=N)
+     {
+      //--- Change the line properties
+      ChangeLineAppearance();
+      //--- Reset the counter of ticks to zero
+      ticks=0;
+     }
+//--- The structure of time is required to get the day of week of each bar
+   MqlDateTime dt;
+//--- The start position of calculations
+   int start=0;
+//--- If the indicator was calculated on the previous tick, then start the calculation
+   if(prev_calculated!=0) start=prev_calculated-1;
+//--- Calculation loop
+   for(int i=start;i<rates_total;i++)
+     {
+      //--- Write the bar open time in the structure
+      TimeToStruct(time[i],dt);
+      //--- If the day of the week of this bar is equal to invisible_day
+      if(dt.day_of_week==invisible_day)
+        {
+         //--- Write empty values to buffers for this bar
+         ZigZagBuffer1[i]=0;
+         ZigZagBuffer2[i]=0;
+        }
+      //--- If the day of the week is ok, fill in the buffers
+
+
+--- Page 2599 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2599
+      else
+        {
+         //--- If the bar number if even
+         if(i%2==0)
+           {
+            //---  Write High in the 1st buffer and Low in the 2nd one
+            ZigZagBuffer1[i]=high[i];
+            ZigZagBuffer2[i]=low[i];
+           }
+         //--- The bar number is odd
+         else
+           {
+            //--- Fill in the bar in a reverse order
+            ZigZagBuffer1[i]=low[i];
+            ZigZagBuffer2[i]=high[i];
+           }
+        }
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Changes the appearance of the zigzag segments                    |
+//+------------------------------------------------------------------+
+void ChangeLineAppearance()
+  {
+//--- A string for the formation of information about the ZigZag properties
+   string comm="";
+//--- A block for changing the color of the ZigZag
+   int number=MathRand(); // Get a random number
+//--- The divisor is equal to the size of the colors[] array
+   int size=ArraySize(colors);
+//--- Get the index to select a new color as the remainder of integer division
+   int color_index=number%size;
+//--- Set the color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_COLOR,colors[color_index]);
+//--- Write the line color
+   comm=comm+"\r\n"+(string)colors[color_index];
+//--- A block for changing the width of the line
+   number=MathRand();
+//--- Get the width of the remainder of integer division
+   int width=number%5;   // The width is set from 0 to 4
+//--- Set the color as the PLOT_LINE_WIDTH property
+   PlotIndexSetInteger(0,PLOT_LINE_WIDTH,width);
+//--- Write the line width
+   comm=comm+"\r\nWidth="+IntegerToString(width);
+//--- A block for changing the style of the line
+
+
+--- Page 2600 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2600
+   number=MathRand();
+//--- The divisor is equal to the size of the styles array
+   size=ArraySize(styles);
+//--- Get the index to select a new style as the remainder of integer division
+   int style_index=number%size;
+//--- Set the color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_STYLE,styles[style_index]);
+//--- Write the line style
+   comm="\r\n"+EnumToString(styles[style_index])+""+comm;
+//--- Add information about the day that is omitted in calculations
+   comm="\r\nNot plotted day - "+EnumToString((ENUM_DAY_OF_WEEK)invisible_day)+comm;
+//--- Show the information on the chart using a comment
+   Comment(comm);
+  }
+
+
+--- Page 2601 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2601
+DRAW_FILLING
+The DRAW_FILLING style plots a colored area between the values of two indicator buffers. In fact, this
+style draws two lines and fills the space between them with one of two specified colors. It is used for
+creating indicators that draw channels. None of the buffers can contain only empty values, since in this
+case nothing is plotted.
+You can set two fill colors:
+· the first color is used for the areas where values in the first buffer are greater than the values in
+the second indicator buffer;
+· the second color is used for the areas where values in the second buffer are greater than the values
+in the first indicator buffer.
+The fill color can be set using the compiler directives or dynamically using the PlotIndexSetInteger()
+function. Dynamic changes of the plotting properties allows "to enliven" indicators, so that their
+appearance changes depending on the current situation.
+The indicator is calculated for all bars, for which the values of the both indicator buffers are equal
+neither to 0 nor to the empty value. To specify what value should be considered as "empty", set this
+value in PLOT_EMPTY_VALUE property:
+   #define INDICATOR_EMPTY_VALUE -1.0
+   ...
+//--- INDICATOR_EMPTY_VALUE (empty value) will not participate in calculation of
+   PlotIndexSetDouble (DRAW_FILLING_creation_index,PLOT_EMPTY_VALUE,INDICATOR_EMPTY_VA
+Drawing on the bars that do not participate in the indicator calculation will depend on the values ​in the
+indicator buffers:
+· Bars, for which the values ​of both indicator buffers are equal to 0, do not participate in drawing the
+indicator. It means that the area with zero values is not filled out.
+· Bars, for which the values ​of the indicator buffers are equal to the "empty value", participate in
+drawing the indicator. The area with empty values will be filled out so that to connect the areas with
+significant values.
+
+
+--- Page 2602 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2602
+It should be noted that if the "empty value" is equal to zero, the bars that do not participate in the
+indicator calculation are also filled out.
+The number of buffers required for plotting DRAW_FILLING is 2.
+An example of the indicator that draws a channel between two MAs with different averaging periods in
+a separate window. The change of the colors at the crossing of moving averages visually shows the
+change of the upward and downward trends. The colors change randomly every N ticks. The N
+parameter is set in external parameters of the indicator for the possibility of manual configuration
+(the Parameters tab in the indicator's Properties window).
+Note that initially for plot1 with DRAW_FILLING the properties are set using the compiler directive
+#property, and then in the OnCalculate() function new colors are set randomly. 
+//+------------------------------------------------------------------+
+//|                                                 DRAW_FILLING.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+
+
+--- Page 2603 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2603
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "An indicator to demonstrate DRAW_FILLING"
+#property description "It draws a channel between two MAs in a separate window"
+#property description "The fill color is changed randomly"
+#property description "after every N ticks"
+#property indicator_separate_window
+#property indicator_buffers 2
+#property indicator_plots   1
+//--- plot Intersection
+#property indicator_label1  "Intersection"
+#property indicator_type1   DRAW_FILLING
+#property indicator_color1  clrRed,clrBlue
+#property indicator_width1  1
+//--- input parameters
+input int      Fast=13;          // The period of a fast MA
+input int      Slow=21;          // The period of a slow MA
+input int      shift=1;          // A shift of MAs towards the future (positive)
+input int      N=5;              // Number of ticks to change 
+//--- Indicator buffers
+double         IntersectionBuffer1[];
+double         IntersectionBuffer2[];
+int fast_handle;
+int slow_handle;
+//--- An array to store colors
+color colors[]={clrRed,clrBlue,clrGreen,clrAquamarine,clrBlanchedAlmond,clrBrown,clrCo
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,IntersectionBuffer1,INDICATOR_DATA);
+   SetIndexBuffer(1,IntersectionBuffer2,INDICATOR_DATA);
+//---
+   PlotIndexSetInteger(0,PLOT_SHIFT,shift);
+//---
+   fast_handle=iMA(_Symbol,_Period,Fast,0,MODE_SMA,PRICE_CLOSE);
+   slow_handle=iMA(_Symbol,_Period,Slow,0,MODE_SMA,PRICE_CLOSE);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+
+
+--- Page 2604 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2604
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   static int ticks=0;
+//--- Calculate ticks to change the style, color and width of the line
+   ticks++;
+//--- If a sufficient number of ticks has been accumulated
+   if(ticks>=N)
+     {
+      //--- Change the line properties
+      ChangeLineAppearance();
+      //--- Reset the counter of ticks to zero
+      ticks=0;
+     }
+//--- Make the first calculation of the indicator, or data has changed and requires a 
+   if(prev_calculated==0)
+     {
+      //--- Copy all the values of the indicators to the appropriate buffers
+      int copied1=CopyBuffer(fast_handle,0,0,rates_total,IntersectionBuffer1);
+      int copied2=CopyBuffer(slow_handle,0,0,rates_total,IntersectionBuffer2);
+     }
+   else // Fill only those data that are updated
+     {
+      //--- Get the difference in bars between the current and previous start of OnCal
+      int to_copy=rates_total-prev_calculated;
+      //--- If there is no difference, we still copy one value - on the zero bar
+      if(to_copy==0) to_copy=1;
+      //--- copy to_copy values to the very end of indicator buffers
+      int copied1=CopyBuffer(fast_handle,0,0,to_copy,IntersectionBuffer1);
+      int copied2=CopyBuffer(slow_handle,0,0,to_copy,IntersectionBuffer2);
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Changes the colors of the channel filling                        |
+//+------------------------------------------------------------------+
+void ChangeLineAppearance()
+  {
+//--- A string for the formation of information about the line properties
+   string comm="";
+//--- A block for changing the color of the line
+
+
+--- Page 2605 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2605
+   int number=MathRand(); // Get a random number
+//--- The divisor is equal to the size of the colors[] array
+   int size=ArraySize(colors);
+//--- Get the index to select a new color as the remainder of integer division
+   int color_index1=number%size;
+//--- Set the first color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_COLOR,0,colors[color_index1]);
+//--- Write the first color
+   comm=comm+"\r\nColor1 "+(string)colors[color_index1];
+//--- Get the index to select a new color as the remainder of integer division
+   number=MathRand(); // Get a random number
+   int color_index2=number%size;
+//--- Set the second color as the PLOT_LINE_COLOR property
+   PlotIndexSetInteger(0,PLOT_LINE_COLOR,1,colors[color_index2]);
+//--- Write the second color
+   comm=comm+"\r\nColor2 "+(string)colors[color_index2];
+//--- Show the information on the chart using a comment
+   Comment(comm);
+  }
+
+
+--- Page 2606 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2606
+DRAW_BARS
+The DRAW_BARS style draws bars on the values of four indicator buffers, which contain the Open,
+High, Low and Close prices. It is used for creating custom indicators as bars, including those in a
+separate subwindow of a chart and on other financial instruments.
+The color of bars can be set using the compiler directives or dynamically using the
+PlotIndexSetInteger() function. Dynamic changes of the plotting properties allows "to enliven"
+indicators, so that their appearance changes depending on the current situation.
+The indicator is drawn only to those bars, for which non-empty values of all four indicator buffers are
+set. To specify what value should be considered as "empty", set this value in the PLOT_EMPTY_VALUE
+property:
+//--- The 0 (empty) value will mot participate in drawing
+   PlotIndexSetDouble(index_of_plot_DRAW_BARS,PLOT_EMPTY_VALUE,0);
+Always explicitly fill in the values of the indicator buffers, set an empty value in a buffer to skip bars.
+The number of required buffers for plotting DRAW_BARS is 4. All buffers for the plotting should go one
+after the other in the given order: Open, High, Low and Close. None of the buffers can contain only
+empty values, since in this case nothing is plotted.
+An example of the indicator that draws bars on a selected financial instrument in a separate window.
+The color of bars changes randomly every N ticks. The N parameter is set in external parameters of
+the indicator for the possibility of manual configuration (the Parameters tab in the indicator's
+Properties window).
+Please note that for plot1 with the DRAW_BARS style, the color is set using the compiler directive
+#property, and then in the OnCalculate() function the color is set randomly from an earlier prepared
+list.
+
+
+--- Page 2607 ---
+Custom Indicators
+© 2000-2025, MetaQuotes Ltd.
+2607
+//+------------------------------------------------------------------+
+//|                                                    DRAW_BARS.mq5 |
+//|                        Copyright 2011, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2000-2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property description "An indicator to demonstrate DRAW_BARS"
+#property description "It draws bars of a selected symbol in a separate window"
+#property description "The color and width of bars, as well as the symbol are changed 
+#property description "every N ticks"
+#property indicator_separate_window
+#property indicator_buffers 4
+#property indicator_plots   1
+//--- plot Bars
+#property indicator_label1  "Bars"
+#property indicator_type1   DRAW_BARS
+#property indicator_color1  clrGreen
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- input parameters
+input int      N=5;              // The number of ticks to change the type
+input int      bars=500;         // The number of bars to show
+input bool     messages=false;   // Show messages in the "Expert Advisors" log
+//--- Indicator buffers
+double         BarsBuffer1[];
+double         BarsBuffer2[];
+double         BarsBuffer3[];
+double         BarsBuffer4[];
+//--- Symbol name
+string symbol;
+//--- An array to store colors
+color colors[]={clrRed,clrBlue,clrGreen,clrPurple,clrBrown,clrIndianRed};
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- If bars is very small - complete the work ahead of time
+   if(bars<50)
+     {
+      Comment("Please specify a larger number of bars! The operation of the indicator 
+      return(INIT_PARAMETERS_INCORRECT);
+     }
+//--- indicator buffers mapping
+   SetIndexBuffer(0,BarsBuffer1,INDICATOR_DATA);

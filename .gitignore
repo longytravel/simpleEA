@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs / local env
+.venv/
+venv/
+.env
+.env.*
+
+# Project outputs
+runs/
+
+# MT5 artifacts
+*.ex5
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+

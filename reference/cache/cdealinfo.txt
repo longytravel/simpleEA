@@ -1,0 +1,261 @@
+=== CDealInfo (Pages 5828-5850) ===
+
+--- Page 5828 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5828
+CDealInfo
+CDealInfo is a class for easy access to the deal properties.
+Description
+CDealInfo class provides access to the deal properties.
+Declaration
+   class CDealInfo : public CObject
+Title
+   #include <Trade\DealInfo.mqh>
+Inheritance hierarchy
+   CObject
+       CDealInfo
+Class methods by groups
+Access 
+to 
+integer 
+type
+properties
+Order
+Gets the order by which the deal is executed
+Time
+Gets the time of deal execution
+TimeMsc
+Receives the time of a deal execution in milliseconds since
+01.01.1970
+DealType
+Gets the deal type
+TypeDescription
+Gets the deal type as a string
+Entry
+Gets the deal direction
+EntryDescription
+Gets the deal direction as a string
+Magic
+Gets the ID of expert, that executed the deal
+PositionId
+Gets the ID of position, in which the deal was involved
+Access 
+to 
+double 
+type
+properties
+Volume
+Gets the volume of deal
+Price
+Gets the deal price
+Commision
+Gets the amount of commission of the deal
+Swap
+Gets the amount of swap when position is closed
+Profit
+Gets the financial result of deal
+
+
+--- Page 5829 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5829
+Access 
+to 
+integer 
+type
+properties
+Access to text properties
+Symbol
+Gets the name of deal symbol
+Comment
+Gets the deal comment
+Access 
+to 
+MQL5 
+API
+functions
+InfoInteger
+Gets the value of specified integer type property
+InfoDouble
+Gets the value of specified double type property
+InfoString
+Gets value of specified string type property
+Selection
+Ticket
+Gets ticket/selects the deal
+SelectByIndex
+Selects the deal by index
+Methods inherited from class CObject
+Prev, Prev, Next, Next, Save, Load, Type, Compare
+
+
+--- Page 5830 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5830
+Order
+Gets the order by which the deal is executed.
+long  Order() const
+Return Value
+Order by which the deal is executed.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5831 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5831
+Time
+Gets the time of deal execution.
+datetime  Time() const
+Return Value
+Time of deal execution.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5832 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5832
+TimeMsc
+Receives the time of a deal execution in milliseconds since 01.01.1970.
+ulong  TimeMsc() const
+Return Value
+The time of a deal execution in milliseconds since 01.01.1970.
+Note
+Deal should be preliminarily selected for access using Ticket (by ticket) or SelectByIndex (by index)
+method.
+
+
+--- Page 5833 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5833
+DealType
+Gets the deal type.
+ENUM_DEAL_TYPE  DealType() const
+Return Value
+Deal type from ENUM_DEAL_TYPE enumeration.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5834 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5834
+TypeDescription
+Gets the deal type as a string.
+string  TypeDescription() const
+Return Value
+Deal type as a string.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5835 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5835
+Entry
+Compares the deal direction.
+ENUM_DEAL_ENTRY  Entry() const
+Return Value
+Deal direction (value of ENUM_DEAL_ENTRY enumeration).
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5836 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5836
+EntryDescription
+Gets the deal direction as a string.
+string  EntryDescription() const
+Return Value
+Deal direction as a string.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5837 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5837
+Magic
+Gets the ID of the Expert Advisor, that executed the deal.
+long  Magic() const
+Return Value
+ID of the Expert Advisor, that executed the deal.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5838 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5838
+PositionId
+Gets the ID of position, in which the deal was involved.
+long  PositionId() const
+Return Value
+ID of position, in which the deal was involved.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5839 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5839
+Volume
+Gets the volume of deal.
+double  Volume() const
+Return Value
+Volume of deal.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5840 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5840
+Price
+Gets the deal price.
+double  Price() const
+Return Value
+Deal price.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5841 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5841
+Commission
+Gets the amount of commission of the deal.
+double  Commission() const
+Return Value
+Amount of commission of the deal.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.
+
+
+--- Page 5842 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5842
+Swap
+Gets the amount of swap when position is closed.
+double  Swap() const
+Return Value
+Amount of swap when position is closed.
+Note
+The deal should be selected using the Ticket (by ticket) or SelectByIndex (by index) methods.

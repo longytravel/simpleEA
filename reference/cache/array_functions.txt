@@ -1,0 +1,2375 @@
+=== Array Functions (Pages 1185-1278) ===
+
+--- Page 1185 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1185
+Group of Functions for Working with Arrays
+Arrays are allowed to be maximum four-dimensional. Each dimension is indexed from 0 to
+dimension_size-1. In a particular case of a one-dimensional array of 50 elements, calling of the first
+element will appear as array[0], of the last one - as array[49].
+Function
+Action
+ArrayBsearch
+Returns index of the first found element in the first array dimension
+ArrayCopy
+Copies one array into another
+ArrayCompare
+Returns the result of comparing two arrays of simple types or custom
+structures without complex objects
+ArrayFree
+Frees up buffer of any dynamic array and sets the size of the zero
+dimension in 0.
+ArrayGetAsSeries
+Checks direction of array indexing
+ArrayInitialize
+Sets all elements of a numeric array into a single value
+ArrayFill
+Fills an array with the specified value
+ArrayIsSeries
+Checks whether an array is a timeseries
+ArrayIsDynamic
+Checks whether an array is dynamic
+ArrayMaximum
+Search for an element with the maximal value
+ArrayMinimum
+Search for an element with the minimal value
+ArrayPrint
+Prints an array of a simple type or a simple structure into journal
+ArrayRange
+Returns the number of elements in the specified dimension of the array
+ArrayResize
+Sets the new size in the first dimension of the array
+ArrayInsert
+Inserts the specified number of elements from a source array to a
+receiving one starting from a specified index
+ArrayRemove
+Removes the specified number of elements from the array starting with a
+specified index
+ArrayReverse
+Reverses the specified number of elements in the array starting with a
+specified index
+ArraySetAsSeries
+Sets the direction of array indexing
+ArraySize
+Returns the number of elements in the array
+ArraySort
+Sorting of numeric arrays by the first dimension
+ArraySwap
+Swaps the contents of two dynamic arrays of the same type
+ArrayToFP16
+Copies an array of type float or double into an array of type ushort with
+the given format
+
+
+--- Page 1186 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1186
+Function
+Action
+ArrayToFP8
+Copies an array of type float or double into an array of type uchar with
+the given format
+ArrayFromFP16
+Copies an array of type ushort into an array of float or double type with
+the given format
+ArrayFromFP8
+Copies an array of type uchar into an array of float or double type with
+the given format
+
+
+--- Page 1187 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1187
+ArrayBsearch
+Searches for a specified value in a multidimensional numeric array sorted ascending. Search is
+performed through the elements of the first dimension.
+For searching in an array of double type
+int  ArrayBsearch(
+   const double&    array[],   // array for search
+   double           value      // what is searched for
+   );
+For searching in an array of float type
+int  ArrayBsearch(
+   const float&    array[],   // array for search
+   float           value      // what is searched for
+   );
+For searching in an array of long type
+int  ArrayBsearch(
+   const long&    array[],   // array for search
+   long           value      // what is searched for
+   );
+For searching in an array of int type
+int  ArrayBsearch(
+   const int&    array[],   // array for search
+   int           value      // what is searched for
+   );
+For searching in an array of short type
+int  ArrayBsearch(
+   const short&    array[],   // array for search
+   short           value      // what is searched for
+   );
+For searching in an array of char type
+int  ArrayBsearch(
+   const char&    array[],   // array for search
+   char           value      // what is searched for
+   );
+Parameters
+array[]
+[in]  Numeric array for search.
+value
+
+
+--- Page 1188 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1188
+[in]  Value for search.
+Return Value
+The function returns index of a found element. If the wanted value isn't found, the function returns
+the index of an element nearest in value.
+Note
+Binary search processes only sorted arrays. To sort numeric arrays use the ArraySort() function.
+Example:
+#property description "Script based on RSI indicator data displays"
+#property description "how often the market was in"
+#property description "overbought and oversold areas in the specified time interval."
+//--- display the window of input parameters when launching the script
+#property script_show_inputs
+//--- input parameters
+input int                InpMAPeriod=14;                    // Moving average period
+input ENUM_APPLIED_PRICE InpAppliedPrice=PRICE_CLOSE;       // Price type
+input double             InpOversoldValue=30.0;             // Oversold level
+input double             InpOverboughtValue=70.0;           // Overbought level
+input datetime           InpDateStart=D'2012.01.01 00:00';  // Analysis start date
+input datetime           InpDateFinish=D'2013.01.01 00:00'; // Analysis finish date
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   double rsi_buff[]; // array of the indicator values
+   int    size=0;     // array size
+//--- receive RSI indicator handle
+   ResetLastError();
+   int rsi_handle=iRSI(Symbol(),Period(),InpMAPeriod,InpAppliedPrice);
+   if(rsi_handle==INVALID_HANDLE)
+     {
+      //--- failed to receive the indicator handle
+      PrintFormat("Indicator handle receiving error. Error code = %d",GetLastError());
+      return;
+     }
+//--- being in the loop, until the indicator calculates all its values
+   while(BarsCalculated(rsi_handle)==-1)
+     {
+      //--- exit if the indicator has forcedly completed the script's operation
+      if(IsStopped())
+         return;
+      //--- a pause to allow the indicator to calculate all its values
+      Sleep(10);
+     }
+//--- copy the indicator values for a certain period of time
+
+
+--- Page 1189 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1189
+   ResetLastError();
+   if(CopyBuffer(rsi_handle,0,InpDateStart,InpDateFinish,rsi_buff)==-1)
+     {
+      PrintFormat("Failed to copy the indicator values. Error code = %d",GetLastError
+      return;
+     }
+//--- receive the array size
+   size=ArraySize(rsi_buff);
+//--- sort out the array
+   ArraySort(rsi_buff);
+//--- find out the time (in percentage terms) the market was in the oversold area
+   double ovs=(double)ArrayBsearch(rsi_buff,InpOversoldValue)*100/(double)size;
+//--- find out the time (in percentage terms) the market was in the overbought area
+   double ovb=(double)(size-ArrayBsearch(rsi_buff,InpOverboughtValue))*100/(double)siz
+//--- form the strings for displaying the data
+   string str="From "+TimeToString(InpDateStart,TIME_DATE)+" to "
+              +TimeToString(InpDateFinish,TIME_DATE)+" the market was:";
+   string str_ovb="in overbought area "+DoubleToString(ovb,2)+"% of time";
+   string str_ovs="in oversold area "+DoubleToString(ovs,2)+"% of time";
+//--- display the data on the chart
+   CreateLabel("top",5,60,str,clrDodgerBlue);
+   CreateLabel("overbought",5,35,str_ovb,clrDodgerBlue);
+   CreateLabel("oversold",5,10,str_ovs,clrDodgerBlue);
+//--- redraw the chart
+   ChartRedraw(0);
+//--- pause
+   Sleep(10000);
+  }
+//+------------------------------------------------------------------+
+//| Display comment in the bottom left corner of the chart           |
+//+------------------------------------------------------------------+
+void CreateLabel(const string name,const int x,const int y,
+                 const string str,const color clr)
+  {
+//--- create the label
+   ObjectCreate(0,name,OBJ_LABEL,0,0,0);
+//--- bind the label to the bottom left corner
+   ObjectSetInteger(0,name,OBJPROP_CORNER,CORNER_LEFT_LOWER);
+//--- change position of the anchor point
+   ObjectSetInteger(0,name,OBJPROP_ANCHOR,ANCHOR_LEFT_LOWER);
+//--- distance from the anchor point in X-direction
+   ObjectSetInteger(0,name,OBJPROP_XDISTANCE,x);
+//--- distance from the anchor point in Y-direction
+   ObjectSetInteger(0,name,OBJPROP_YDISTANCE,y);
+//--- label text
+   ObjectSetString(0,name,OBJPROP_TEXT,str);
+//--- text color
+   ObjectSetInteger(0,name,OBJPROP_COLOR,clr);
+//--- text size
+
+
+--- Page 1190 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1190
+   ObjectSetInteger(0,name,OBJPROP_FONTSIZE,12);
+  }
+
+
+--- Page 1191 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1191
+ArrayCopy
+It copies an array into another one.
+int  ArrayCopy(
+   void&        dst_array[],         // destination array
+   const void&  src_array[],         // source array
+   int          dst_start=0,         // index starting from which write into destinati
+   int          src_start=0,         // first index of a source array
+   int          count=WHOLE_ARRAY    // number of elements
+   );
+Parameters
+dst_array[]
+[out]  Destination array
+src_array[]
+[in]  Source array
+dst_start=0
+[in]  Starting index from the destination array. By default, start index is 0.
+src_start=0
+[in]  Starting index for the source array. By default, start index is 0.
+count=WHOLE_ARRAY
+[in]  Number of elements that should be copied. By default, the whole array is copied
+(count=WHOLE_ARRAY).
+Return Value
+It returns the number of copied elements.
+Note
+If count<0 or count>src_size-src_start, all the remaining array part is copied. Arrays are copied from
+left to right. For series arrays, the starting position is correctly defined adjusted for copying from
+left to right.
+If arrays are of different types, during copying it tries to transform each element of a source array
+into the type of the destination array. A string array can be copied into a string array only. Array of
+classes and structures containing objects that require initialization aren't copied. An array of
+structures can be copied into an array of the same type only.
+For dynamic arrays with indexing as in timeseries, the size of a destination array is automatically
+increased to the amount of copied data (if the latter exceeds the array size). The destination array
+size is not decreased automatically.
+Example:
+#property description "The indicator highlights the candlesticks that are local"
+#property description "highs and lows. Interval length for finding"
+#property description "extreme values should be found using an input parameters."
+
+
+--- Page 1192 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1192
+//--- indicator settings
+#property indicator_chart_window
+#property indicator_buffers 5
+#property indicator_plots   1
+//---- plot
+#property indicator_label1  "Extremums"
+#property indicator_type1   DRAW_COLOR_CANDLES
+#property indicator_color1  clrLightSteelBlue,clrRed,clrBlue
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- predefined constant
+#define INDICATOR_EMPTY_VALUE 0.0
+//--- input parameters
+input int InpNum=4; // Half-interval length
+//--- indicator buffers
+double ExtOpen[];
+double ExtHigh[];
+double ExtLow[];
+double ExtClose[];
+double ExtColor[];
+//--- global variables
+int    ExtStart=0; // index of the first candlestick that is not an extremum
+int    ExtCount=0; // number of non-extremums in the interval
+//+------------------------------------------------------------------+
+//| Filling out non-extremum candlesticks                            |
+//+------------------------------------------------------------------+
+void FillCandles(const double &open[],const double &high[],
+                 const double &low[],const double &close[])
+  {
+//--- fill out the candlesticks
+   ArrayCopy(ExtOpen,open,ExtStart,ExtStart,ExtCount);
+   ArrayCopy(ExtHigh,high,ExtStart,ExtStart,ExtCount);
+   ArrayCopy(ExtLow,low,ExtStart,ExtStart,ExtCount);
+   ArrayCopy(ExtClose,close,ExtStart,ExtStart,ExtCount);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,ExtOpen);
+   SetIndexBuffer(1,ExtHigh);
+   SetIndexBuffer(2,ExtLow);
+   SetIndexBuffer(3,ExtClose);
+   SetIndexBuffer(4,ExtColor,INDICATOR_COLOR_INDEX);
+//--- specify the value, which is not displayed
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,INDICATOR_EMPTY_VALUE);
+//--- specify the names of indicator buffers for displaying in the data window
+
+
+--- Page 1193 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1193
+   PlotIndexSetString(0,PLOT_LABEL,"Open;High;Low;Close");
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- set straight indexing in time series
+   ArraySetAsSeries(open,false);
+   ArraySetAsSeries(high,false);
+   ArraySetAsSeries(low,false);
+   ArraySetAsSeries(close,false);
+//--- variable of the bar calculation start
+   int start=prev_calculated;
+//--- calculation is not performed for the first InpNum*2 bars
+   if(start==0)
+     {
+      start+=InpNum*2;
+      ExtStart=0;
+      ExtCount=0;
+     }
+//--- if the bar has just formed, check the next potential extremum
+   if(rates_total-start==1)
+      start--;
+//--- bar index to be checked for the extremum
+   int ext;
+//--- indicator value calculation loop
+   for(int i=start;i<rates_total-1;i++)
+     {
+      //--- initially on i bar without drawing
+      ExtOpen[i]=0;
+      ExtHigh[i]=0;
+      ExtLow[i]=0;
+      ExtClose[i]=0;
+      //--- extremum index for check
+      ext=i-InpNum;
+      //--- check for the local maximum
+      if(IsMax(high,ext))
+
+
+--- Page 1194 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1194
+        {
+         //--- highlight an extremum candlestick
+         ExtOpen[ext]=open[ext];
+         ExtHigh[ext]=high[ext];
+         ExtLow[ext]=low[ext];
+         ExtClose[ext]=close[ext];
+         ExtColor[ext]=1;
+         //--- highlight other candles up to the extremum with a neutral color
+         FillCandles(open,high,low,close);
+         //--- change the variable colors
+         ExtStart=ext+1;
+         ExtCount=0;
+         //--- pass to the next iteration
+         continue;
+        }
+      //--- check for the local minimum
+      if(IsMin(low,ext))
+        {
+         //--- highlight an extremum candlestick
+         ExtOpen[ext]=open[ext];
+         ExtHigh[ext]=high[ext];
+         ExtLow[ext]=low[ext];
+         ExtClose[ext]=close[ext];
+         ExtColor[ext]=2;
+         //--- highlight other candles up to the extremum with a neutral color
+         FillCandles(open,high,low,close);
+         //--- change variable values
+         ExtStart=ext+1;
+         ExtCount=0;
+         //--- pass to the next iteration
+         continue;
+        }
+      //--- increase the number of non-extremums at the interval
+      ExtCount++;
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Check if the current array element is a local high               |
+//+------------------------------------------------------------------+
+bool IsMax(const double &price[],const int ind)
+  {
+//--- interval start variable
+   int i=ind-InpNum;
+//--- interval end period
+   int finish=ind+InpNum+1;
+//--- check for the first half of the interval
+   for(;i<ind;i++)
+
+
+--- Page 1195 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1195
+     {
+      if(price[ind]<=price[i])
+         return(false);
+     }
+//--- check for the second half of the interval
+   for(i=ind+1;i<finish;i++)
+     {
+      if(price[ind]<=price[i])
+         return(false);
+     }
+//--- this is an extremum
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Check if the current array element is a local low                |
+//+------------------------------------------------------------------+
+bool IsMin(const double &price[],const int ind)
+  {
+//--- interval start variable
+   int i=ind-InpNum;
+//--- interval end variable
+   int finish=ind+InpNum+1;
+//--- check for the first half of the interval
+   for(;i<ind;i++)
+     {
+      if(price[ind]>=price[i])
+         return(false);
+     }
+//--- check for the second half of the interval
+   for(i=ind+1;i<finish;i++)
+     {
+      if(price[ind]>=price[i])
+         return(false);
+     }
+//--- this is an extremum
+   return(true);
+  }
+
+
+--- Page 1196 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1196
+ArrayCompare
+The function returns the result of comparing two arrays of the same type. It can be used to compare
+arrays of simple types or custom structures without complex objects, that is the custom structures
+that do not contain strings, dynamic arrays, classes and other structures with complex objects.
+int  ArrayCompare(
+   const void&  array1[],            // first array
+   const void&  array2[],            // second array
+   int          start1=0,            // initial offset in the first array
+   int          start2=0,            // initial offset in the second array
+   int          count=WHOLE_ARRAY    // number of elements for comparison
+   );
+Parameters
+array1[]
+[in]  First array.
+array2[]
+[in]  Second array.
+start1=0
+[in]  The element's initial index in the first array, from which comparison starts. The default start
+index - 0.
+start2=0
+[in]  The element's initial index in the second array, from which comparison starts. The default
+start index - 0.
+count=WHOLE_ARRAY
+[in]  Number of elements to be compared. All elements of both arrays participate in comparison by
+default (count=WHOLE_ARRAY).
+Return Value
+· -1, if array1[] less than array2[]
+· 0, if array1[] equal to array2[]
+· 1, if array1[] more than array2[]
+· -2, if an error occurs due to incompatibility of the types of compared arrays or if start1, start2 or
+count values lead to falling outside the array.
+Note
+The function will not return 0 (the arrays will not be considered equal) if the arrays differ in size and
+count=WHOLE_ARRAY for the case when one array is a faithful subset of another one. In this case,
+the result of comparing the sizes of that arrays will be returned: -1, if the size of array1[] is less
+than the size of array2[] , otherwise 1.
+Example:
+//--- global variables 
+
+
+--- Page 1197 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1197
+double   ExtArrayFirst[];
+double   ExtArraySecond[];
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- set the array sizes
+   if(ArrayResize(ExtArrayFirst,10)!=10)
+     {
+      Print("ArrayResize() failed for ExtArrayFirst. Error code: ",GetLastError());
+      return;
+     }
+   if(ArrayResize(ExtArraySecond,10)!=10)
+     {
+      Print("ArrayResize() failed for ExtArraySecond. Error code: ",GetLastError());
+      return;
+     }
+     
+//--- fill the arrays with the values of i and j indices in a loop
+   int total=ArraySize(ExtArrayFirst);
+   for(int i=0, j=total-1; i<total; i++,j--)
+     {
+      //--- fill the ExtArrayFirst array from left to right
+      //--- fill the ExtArraySecond array from right to left
+      ExtArrayFirst[i]=i;
+      ExtArraySecond[i]=j;
+     }
+//--- compare the arrays and print the result in the log
+   ArrayComparePrint(ExtArrayFirst,ExtArraySecond);
+   /*
+   Result:
+   ExtArrayFirst:
+   0.00000 1.00000 2.00000 3.00000 4.00000 5.00000 6.00000 7.00000 8.00000 9.00000
+   ExtArraySecond:
+   9.00000 8.00000 7.00000 6.00000 5.00000 4.00000 3.00000 2.00000 1.00000 0.00000
+   Result ArrayCompare(): ExtArrayFirst is smaller than ExtArraySecond (result = -1)
+   */
+   
+//--- now let's flip the arrays
+//--- fill the arrays with the values of i and j indices in a loop
+   for(int i=0, j=total-1; i<total; i++,j--)
+     {
+      //--- fill the ExtArrayFirst array from right to left
+      //--- fill the ExtArraySecond array from left to right
+      ExtArrayFirst[i]=j;
+      ExtArraySecond[i]=i;
+     }
+
+
+--- Page 1198 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1198
+//--- compare the arrays and print the result in the log
+   ArrayComparePrint(ExtArrayFirst,ExtArraySecond);
+   /*
+   Result:
+   ExtArrayFirst:
+   9.00000 8.00000 7.00000 6.00000 5.00000 4.00000 3.00000 2.00000 1.00000 0.00000
+   ExtArraySecond:
+   0.00000 1.00000 2.00000 3.00000 4.00000 5.00000 6.00000 7.00000 8.00000 9.00000
+   Result ArrayCompare(): ExtArrayFirst is larger than ExtArraySecond (result = 1)
+   */
+   
+//--- now let's fill the arrays in one direction
+//--- fill the arrays with the values of i index in a loop
+   for(int i=0; i<total; i++)
+     {
+      //--- fill both arrays from left to right
+      ExtArrayFirst[i]=i;
+      ExtArraySecond[i]=i;
+     }
+//--- compare the arrays and print the result in the log
+   ArrayComparePrint(ExtArrayFirst,ExtArraySecond);
+   /*
+   Result:
+   ExtArrayFirst:
+   0.00000 1.00000 2.00000 3.00000 4.00000 5.00000 6.00000 7.00000 8.00000 9.00000
+   ExtArraySecond:
+   0.00000 1.00000 2.00000 3.00000 4.00000 5.00000 6.00000 7.00000 8.00000 9.00000
+   Result ArrayCompare(): ExtArrayFirst and ExtArraySecond are equal (result = 0)
+   */
+  }
+//+------------------------------------------------------------------+
+//| Compare and display the result                                   |
+//+------------------------------------------------------------------+
+void ArrayComparePrint(const double &array1[], const double &array2[])
+  {
+   //--- print the header and contents of the arrays
+   Print("ExtArrayFirst:");
+   ArrayPrint(array1);
+   Print("ExtArraySecond:");
+   ArrayPrint(array2);
+   //--- compare the arrays and print the comparison result
+   int    res=ArrayCompare(array1,array2);
+   string res_str=(res>0 ? "ExtArrayFirst is larger than ExtArraySecond" : res<0 ? "Ex
+   PrintFormat("Result ArrayCompare(): %s (result = %d)\n",res_str,res);
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 1199 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1199
+ArrayFree
+It frees up a buffer of any dynamic array and sets the size of the zero dimension to 0. 
+void  ArrayFree(
+   void&  array[]      // array
+   );
+Parameters
+array[]
+[in]  Dynamic array.
+Return Value
+No return value.
+Note
+The need for using ArrayFree() function may not appear too often considering that all used memory
+is freed at once and main work with the arrays comprises the access to the indicator buffers. The
+sizes of the buffers are automatically managed by the terminal's executive subsystem.
+In case it is necessary to manually manage the memory in complex dynamic environment of the
+application, ArrayFree() function allows users to free the memory occupied by the already
+unnecessary dynamic array explicitly and immediately.
+Example:
+#include <Controls\Dialog.mqh>
+#include <Controls\Button.mqh>
+#include <Controls\Label.mqh>
+#include <Controls\ComboBox.mqh>
+//--- predefined constants
+#define X_START 0
+#define Y_START 0
+#define X_SIZE 280
+#define Y_SIZE 300
+//+------------------------------------------------------------------+
+//| Dialog class for working with memory                             |
+//+------------------------------------------------------------------+
+class CMemoryControl : public CAppDialog
+  {
+private:
+   //--- array size
+   int               m_arr_size;
+   //--- arrays
+   char              m_arr_char[];
+   int               m_arr_int[];
+   float             m_arr_float[];
+   double            m_arr_double[];
+   long              m_arr_long[];
+
+
+--- Page 1200 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1200
+   //--- labels
+   CLabel            m_lbl_memory_physical;
+   CLabel            m_lbl_memory_total;
+   CLabel            m_lbl_memory_available;
+   CLabel            m_lbl_memory_used;
+   CLabel            m_lbl_array_size;
+   CLabel            m_lbl_array_type;
+   CLabel            m_lbl_error;
+   CLabel            m_lbl_change_type;
+   CLabel            m_lbl_add_size;
+   //--- buttons
+   CButton           m_button_add;
+   CButton           m_button_free;
+   //--- combo boxes
+   CComboBox         m_combo_box_step;
+   CComboBox         m_combo_box_type;
+   //--- current value of the array type from the combo box
+   int               m_combo_box_type_value;
+public:
+                     CMemoryControl(void);
+                    ~CMemoryControl(void);
+   //--- class object creation method
+   virtual bool      Create(const long chart,const string name,const int subwin,const 
+   //--- handler of chart events
+   virtual bool      OnEvent(const int id,const long &lparam,const double &dparam,cons
+protected:
+   //--- create labels
+   bool              CreateLabel(CLabel &lbl,const string name,const int x,const int y
+   //--- create control elements
+   bool              CreateButton(CButton &button,const string name,const int x,const 
+   bool              CreateComboBoxStep(void);
+   bool              CreateComboBoxType(void);
+   //--- event handlers
+   void              OnClickButtonAdd(void);
+   void              OnClickButtonFree(void);
+   void              OnChangeComboBoxType(void);
+   //--- methods for working with the current array
+   void              CurrentArrayFree(void);
+   bool              CurrentArrayAdd(void);
+  };
+//+------------------------------------------------------------------+
+//| Free memory of the current array                                 |
+//+------------------------------------------------------------------+
+void CMemoryControl::CurrentArrayFree(void)
+  {
+//--- reset array size
+   m_arr_size=0;
+
+
+--- Page 1201 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1201
+//--- free the array
+   if(m_combo_box_type_value==0)
+      ArrayFree(m_arr_char);
+   if(m_combo_box_type_value==1)
+      ArrayFree(m_arr_int);
+   if(m_combo_box_type_value==2)
+      ArrayFree(m_arr_float);
+   if(m_combo_box_type_value==3)
+      ArrayFree(m_arr_double);
+   if(m_combo_box_type_value==4)
+      ArrayFree(m_arr_long);
+  }  
+//+------------------------------------------------------------------+
+//| Attempt to add memory for the current array                      |
+//+------------------------------------------------------------------+
+bool CMemoryControl::CurrentArrayAdd(void)
+  {
+//--- exit if the size of the used memory exceeds the size of the physical memory
+   if(TerminalInfoInteger(TERMINAL_MEMORY_PHYSICAL)/TerminalInfoInteger(TERMINAL_MEMOR
+      return(false);
+//--- attempt to allocate memory according to the current type
+   if(m_combo_box_type_value==0 && ArrayResize(m_arr_char,m_arr_size)==-1)
+      return(false);
+   if(m_combo_box_type_value==1 && ArrayResize(m_arr_int,m_arr_size)==-1)
+      return(false);
+   if(m_combo_box_type_value==2 && ArrayResize(m_arr_float,m_arr_size)==-1)
+      return(false);
+   if(m_combo_box_type_value==3 && ArrayResize(m_arr_double,m_arr_size)==-1)
+      return(false);
+   if(m_combo_box_type_value==4 && ArrayResize(m_arr_long,m_arr_size)==-1)
+      return(false);
+//--- memory allocated
+   return(true);
+  }  
+//+------------------------------------------------------------------+
+//| Handling events                                                  |
+//+------------------------------------------------------------------+
+EVENT_MAP_BEGIN(CMemoryControl)
+ON_EVENT(ON_CLICK,m_button_add,OnClickButtonAdd)
+ON_EVENT(ON_CLICK,m_button_free,OnClickButtonFree)
+ON_EVENT(ON_CHANGE,m_combo_box_type,OnChangeComboBoxType)
+EVENT_MAP_END(CAppDialog)
+//+------------------------------------------------------------------+
+//| Constructor                                                      |
+//+------------------------------------------------------------------+
+CMemoryControl::CMemoryControl(void)
+  {
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 1202 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1202
+//| Destructor                                                       |
+//+------------------------------------------------------------------+
+CMemoryControl::~CMemoryControl(void)
+  {
+  }
+//+------------------------------------------------------------------+
+//| Class object creation method                                     |
+//+------------------------------------------------------------------+
+bool CMemoryControl::Create(const long chart,const string name,const int subwin,
+                            const int x1,const int y1,const int x2,const int y2)
+  {
+//--- create base class object
+   if(!CAppDialog::Create(chart,name,subwin,x1,y1,x2,y2))
+      return(false);
+//--- prepare strings for labels
+   string str_physical="Memory physical = "+(string)TerminalInfoInteger(TERMINAL_MEMOR
+   string str_total="Memory total = "+(string)TerminalInfoInteger(TERMINAL_MEMORY_TOTA
+   string str_available="Memory available = "+(string)TerminalInfoInteger(TERMINAL_MEM
+   string str_used="Memory used = "+(string)TerminalInfoInteger(TERMINAL_MEMORY_USED)+
+//--- create labels
+   if(!CreateLabel(m_lbl_memory_physical,"physical_label",X_START+10,Y_START+5,str_phy
+      return(false);
+   if(!CreateLabel(m_lbl_memory_total,"total_label",X_START+10,Y_START+30,str_total,12
+      return(false);
+   if(!CreateLabel(m_lbl_memory_available,"available_label",X_START+10,Y_START+55,str_
+      return(false);
+   if(!CreateLabel(m_lbl_memory_used,"used_label",X_START+10,Y_START+80,str_used,12,cl
+      return(false);
+   if(!CreateLabel(m_lbl_array_type,"type_label",X_START+10,Y_START+105,"Array type = 
+      return(false);
+   if(!CreateLabel(m_lbl_array_size,"size_label",X_START+10,Y_START+130,"Array size = 
+      return(false);
+   if(!CreateLabel(m_lbl_error,"error_label",X_START+10,Y_START+155,"",12,clrRed))
+      return(false);
+   if(!CreateLabel(m_lbl_change_type,"change_type_label",X_START+10,Y_START+185,"Chang
+      return(false);
+   if(!CreateLabel(m_lbl_add_size,"add_size_label",X_START+10,Y_START+210,"Add to arra
+      return(false);
+//--- create control elements
+   if(!CreateButton(m_button_add,"add_button",X_START+15,Y_START+245,"Add",12,clrBlue)
+      return(false);
+   if(!CreateButton(m_button_free,"free_button",X_START+75,Y_START+245,"Free",12,clrBl
+      return(false);
+   if(!CreateComboBoxType())
+      return(false);
+   if(!CreateComboBoxStep())
+      return(false);
+//--- initialize the variable
+   m_arr_size=0;
+
+
+--- Page 1203 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1203
+//--- successful execution
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Create the button                                                |
+//+------------------------------------------------------------------+
+bool CMemoryControl::CreateButton(CButton &button,const string name,const int x,
+                                  const int y,const string str,const int font_size,
+                                  const int clr)
+  {
+//--- create the button
+   if(!button.Create(m_chart_id,name,m_subwin,x,y,x+50,y+20))
+      return(false);
+//--- text
+   if(!button.Text(str))
+      return(false);
+//--- font size
+   if(!button.FontSize(font_size))
+      return(false);
+//--- label color
+   if(!button.Color(clr))
+      return(false);
+//--- add the button to the control elements
+   if(!Add(button))
+      return(false);
+//--- successful execution
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Create a combo box for the array size                            |
+//+------------------------------------------------------------------+
+bool CMemoryControl::CreateComboBoxStep(void)
+  {
+//--- create the combo box
+   if(!m_combo_box_step.Create(m_chart_id,"step_combobox",m_subwin,X_START+100,Y_START
+      return(false);
+//--- add elements to the combo box
+   if(!m_combo_box_step.ItemAdd("100 000",100000))
+      return(false);
+   if(!m_combo_box_step.ItemAdd("1 000 000",1000000))
+      return(false);
+   if(!m_combo_box_step.ItemAdd("10 000 000",10000000))
+      return(false);
+   if(!m_combo_box_step.ItemAdd("100 000 000",100000000))
+      return(false);
+//--- set the current combo box element
+   if(!m_combo_box_step.SelectByValue(1000000))
+      return(false);
+//--- add the combo box to control elements
+
+
+--- Page 1204 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1204
+   if(!Add(m_combo_box_step))
+      return(false);
+//--- successful execution
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Create a combo box for the array type                            |
+//+------------------------------------------------------------------+
+bool CMemoryControl::CreateComboBoxType(void)
+  {
+//--- create the combo box
+   if(!m_combo_box_type.Create(m_chart_id,"type_combobox",m_subwin,X_START+100,Y_START
+      return(false);
+//--- add elements to the combo box
+   if(!m_combo_box_type.ItemAdd("char",0))
+      return(false);
+   if(!m_combo_box_type.ItemAdd("int",1))
+      return(false);
+   if(!m_combo_box_type.ItemAdd("float",2))
+      return(false);
+   if(!m_combo_box_type.ItemAdd("double",3))
+      return(false);
+   if(!m_combo_box_type.ItemAdd("long",4))
+      return(false);
+//--- set the current combo box element
+   if(!m_combo_box_type.SelectByValue(3))
+      return(false);
+//--- store the current combo box element
+   m_combo_box_type_value=3;
+//--- add the combo box to control elements
+   if(!Add(m_combo_box_type))
+      return(false);
+//--- successful execution
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Create a label                                                   |
+//+------------------------------------------------------------------+
+bool CMemoryControl::CreateLabel(CLabel &lbl,const string name,const int x,
+                                 const int y,const string str,const int font_size,
+                                 const int clr)
+  {
+//--- create a label
+   if(!lbl.Create(m_chart_id,name,m_subwin,x,y,0,0))
+      return(false);
+//--- text
+   if(!lbl.Text(str))
+      return(false);
+//--- font size
+
+
+--- Page 1205 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1205
+   if(!lbl.FontSize(font_size))
+      return(false);
+//--- color
+   if(!lbl.Color(clr))
+      return(false);
+//--- add the label to control elements
+   if(!Add(lbl))
+      return(false);
+//--- succeed
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Handler of clicking "Add" button event                           |
+//+------------------------------------------------------------------+
+void CMemoryControl::OnClickButtonAdd(void)
+  {
+//--- increase the array size
+   m_arr_size+=(int)m_combo_box_step.Value();
+//--- attempt to allocate memory for the current array
+   if(CurrentArrayAdd())
+     {
+      //--- memory allocated, display the current status on the screen
+      m_lbl_memory_available.Text("Memory available = "+(string)TerminalInfoInteger(TE
+      m_lbl_memory_used.Text("Memory used = "+(string)TerminalInfoInteger(TERMINAL_MEM
+      m_lbl_array_size.Text("Array size = "+IntegerToString(m_arr_size));
+      m_lbl_error.Text("");
+     }
+   else
+     {
+      //--- failed to allocate memory, display the error message
+      m_lbl_error.Text("Array is too large, error!");
+      //--- return the previous array size
+      m_arr_size-=(int)m_combo_box_step.Value();
+     }
+  }
+//+------------------------------------------------------------------+
+//| Handler of clicking "Free" button event                          |
+//+------------------------------------------------------------------+
+void CMemoryControl::OnClickButtonFree(void)
+  {
+//--- free the memory of the current array
+   CurrentArrayFree();
+//--- display the current status on the screen
+   m_lbl_memory_available.Text("Memory available = "+(string)TerminalInfoInteger(TERMI
+   m_lbl_memory_used.Text("Memory used = "+(string)TerminalInfoInteger(TERMINAL_MEMORY
+   m_lbl_array_size.Text("Array size = 0");
+   m_lbl_error.Text("");
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 1206 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1206
+//| Handler of the combo box change event                            |
+//+------------------------------------------------------------------+
+void CMemoryControl::OnChangeComboBoxType(void)
+  {
+//--- check if the array's type has changed
+   if(m_combo_box_type.Value()!=m_combo_box_type_value)
+     {
+      //--- free the memory of the current array
+      OnClickButtonFree();
+      //--- work with another array type
+      m_combo_box_type_value=(int)m_combo_box_type.Value();
+      //--- display the new array type on the screen
+      if(m_combo_box_type_value==0)
+         m_lbl_array_type.Text("Array type = char");
+      if(m_combo_box_type_value==1)
+         m_lbl_array_type.Text("Array type = int");
+      if(m_combo_box_type_value==2)
+         m_lbl_array_type.Text("Array type = float");
+      if(m_combo_box_type_value==3)
+         m_lbl_array_type.Text("Array type = double");
+      if(m_combo_box_type_value==4)
+         m_lbl_array_type.Text("Array type = long");
+     }
+  }
+//--- CMemoryControl class object
+CMemoryControl ExtDialog;
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- create the dialog
+   if(!ExtDialog.Create(0,"MemoryControl",0,X_START,Y_START,X_SIZE,Y_SIZE))
+      return(INIT_FAILED);
+//--- launch
+   ExtDialog.Run();
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+//---
+   ExtDialog.Destroy(reason);
+  }
+//+------------------------------------------------------------------+
+//| Expert chart event function                                      |
+
+
+--- Page 1207 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1207
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id,
+                  const long &lparam,
+                  const double &dparam,
+                  const string &sparam)
+  {
+   ExtDialog.ChartEvent(id,lparam,dparam,sparam);
+  }
+
+
+--- Page 1208 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1208
+ArrayGetAsSeries
+It checks direction of an array index.
+bool  ArrayGetAsSeries(
+   const void&  array[]    // array for checking
+   );
+Parameters
+array
+[in]  Checked array.
+Return Value
+Returns true, if the specified array has the AS_SERIES flag set, i.e. access to the array is performed
+back to front as in timeseries. A timeseries differs from a usual array in that the indexing of
+timeseries elements is performed from its end to beginning (from the newest data to old).
+Note
+To check whether an array belongs to timeseries, use the ArrayIsSeries() function. Arrays of price
+data passed as input parameters into the OnCalculate() function do not obligatorily have the
+indexing direction the same as in timeseries. The necessary indexing direction can be set using the
+ArraySetAsSeries() function.
+Example:
+#property description "Indicator calculates absolute values of the difference between"
+#property description "Open and Close or High and Low prices displaying them in a sepa
+#property description "as a histrogram."
+//--- indicator settings
+#property indicator_separate_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//---- plot
+#property indicator_type1   DRAW_HISTOGRAM
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  3
+//--- input parameters
+input bool InpAsSeries=true; // Indexing direction in the indicator buffer
+input bool InpPrices=true;   // Calculation prices (true - Open,Close; false - High,Lo
+//--- indicator buffer
+double ExtBuffer[];
+//+------------------------------------------------------------------+
+//| Calculating indicator values                                     |
+//+------------------------------------------------------------------+
+void CandleSizeOnBuffer(const int rates_total,const int prev_calculated,
+                        const double &first[],const double &second[],double &buffer[])
+  {
+//--- start variable for calculation of bars
+   int start=prev_calculated;
+
+
+--- Page 1209 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1209
+//--- work at the last bar if the indicator values have already been calculated at the
+   if(prev_calculated>0)
+      start--;
+//--- define indexing direction in arrays
+   bool as_series_first=ArrayGetAsSeries(first);
+   bool as_series_second=ArrayGetAsSeries(second);
+   bool as_series_buffer=ArrayGetAsSeries(buffer);
+//--- replace indexing direction with direct one if necessary
+   if(as_series_first)
+      ArraySetAsSeries(first,false);
+   if(as_series_second)
+      ArraySetAsSeries(second,false);
+   if(as_series_buffer)
+      ArraySetAsSeries(buffer,false);
+//--- calculate indicator values
+   for(int i=start;i<rates_total;i++)
+      buffer[i]=MathAbs(first[i]-second[i]);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- bind indicator buffers
+   SetIndexBuffer(0,ExtBuffer);
+//--- set indexing element in the indicator buffer
+   ArraySetAsSeries(ExtBuffer,InpAsSeries);
+//--- check for what prices the indicator is calculated
+   if(InpPrices)
+     {
+      //--- Open and Close prices
+      PlotIndexSetString(0,PLOT_LABEL,"BodySize");
+      //--- set the indicator color
+      PlotIndexSetInteger(0,PLOT_LINE_COLOR,clrOrange);
+     }
+   else
+     {
+      //--- High and Low prices
+      PlotIndexSetString(0,PLOT_LABEL,"ShadowSize");
+      //--- set the indicator color
+      PlotIndexSetInteger(0,PLOT_LINE_COLOR,clrDodgerBlue);
+     }
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+
+
+--- Page 1210 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1210
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//--- calculate the indicator according to the flag value
+   if(InpPrices)
+      CandleSizeOnBuffer(rates_total,prev_calculated,open,close,ExtBuffer);
+   else
+      CandleSizeOnBuffer(rates_total,prev_calculated,high,low,ExtBuffer);
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+See also
+ Access to timeseries, ArraySetAsSeries
+
+
+--- Page 1211 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1211
+ArrayInitialize
+The function initializes a numeric array by a preset value.
+For initialization of an array of char type
+int  ArrayInitialize(
+   char    array[],     // initialized array
+   char    value        // value that will be set
+   );
+For initialization of an array of short type
+int  ArrayInitialize(
+   short   array[],     // initialized array
+   short   value        // value that will be set
+   );
+For initialization of an array of int type
+int  ArrayInitialize(
+   int     array[],     // initialized array
+   int     value        // value that will be set
+   );
+For initialization of an array of long type
+int  ArrayInitialize(
+   long    array[],     // initialized array
+   long    value        // value that will be set
+   );
+For initialization of an array of float type
+int  ArrayInitialize(
+   float   array[],     // initialized array
+   float   value        // value that will be set
+   );
+For initialization of an array of double type
+int  ArrayInitialize(
+   double  array[],     // initialized array
+   double  value        // value that will be set
+   );
+For initialization of an array of bool type
+int  ArrayInitialize(
+   bool    array[],     // initialized array
+   bool    value        // value that will be set
+   );
+
+
+--- Page 1212 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1212
+For initialization of an array of uint type
+int  ArrayInitialize(
+   uint    array[],     // initialized array
+   uint    value        // value that will be set
+   );
+Parameters
+array[]
+[out]  Numeric array that should be initialized.
+value
+[in]  New value that should be set to all array elements.
+Return Value
+Number of initialized elements.
+Note
+The ArrayResize() function allows to set size of an array with a reserve for further expansion
+without the physical relocation of memory. It is implemented for the better performance, because
+the operations of memory relocation are reasonably slow.
+Initialization of the array using ArrayInitialize(array, init_val) doesn't mean the initialization with
+the same value of reserve elements allocated for this array. At further expanding of the array using
+the ArrayResize() function, the elements will be added at the end of the array, their values will be
+undefined and in most cases will not be equal to init_value.
+Example:
+void OnStart()
+  {
+//--- dynamic array
+   double array[];
+//--- let's set the array size for 100 elements and reserve a buffer for another 10 el
+   ArrayResize(array,100,10);
+//--- initialize the array elements with EMPTY_VALUE=DBL_MAX value
+   ArrayInitialize(array,EMPTY_VALUE);
+   Print("Values of 10 last elements after initialization");
+   for(int i=90;i<100;i++) printf("array[%d] = %G",i,array[i]);
+//--- expand the array by 5 elements
+   ArrayResize(array,105);
+   Print("Values of 10 last elements after ArrayResize(array,105)");
+//--- values of 5 last elements are obtained from reserve buffer
+   for(int i=95;i<105;i++) printf("array[%d] = %G",i,array[i]);
+  }
+
+
+--- Page 1213 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1213
+ArrayFill
+The function fills an array with the specified value.
+void  ArrayFill(
+   void&  array[],      // array
+   int    start,         // starting index
+   int    count,         // number of elements to fill
+   void   value          // value
+   );
+Parameters
+array[]
+[out]  Array of simple type (char, uchar, short, ushort, int, uint, long, ulong, bool, color, datetime,
+float, double).
+start
+[in]  Starting index.  In such a case, specified AS_SERIES flag is ignored.
+count
+[in]  Number of elements to fill.
+value
+[in]  Value to fill the array with.
+Return Value
+No return value.
+Note
+When ArrayFill() function is called, normal indexation direction (from left to right) is always implied.
+It means that the change of the order of access to the array elements using ArraySetAsSeries()
+function is ignored. 
+A multidimensional array is shown as one-dimensional when processed by ArrayFill() function. For
+example, array[2][4] is processed as array[8]. Therefore, you may specify the initial element's index
+to be equal to 5 when working with this array. Thus, the call of ArrayFill(array, 5, 2, 3.14) for
+array[2][4] fills array[1][1] and array[1][2] elements with 3.14.
+Example:
+void OnStart()
+  {
+//--- declare dynamic array
+   int a[];
+//--- set size
+   ArrayResize(a,10);
+//--- fill first 5 elements with 123
+   ArrayFill(a,0,5,123);
+//--- fill next 5 elements with 456
+   ArrayFill(a,5,5,456);
+
+
+--- Page 1214 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1214
+//--- show values
+   for(int i=0;i<ArraySize(a);i++) printf("a[%d] = %d",i,a[i]);
+  }
+
+
+--- Page 1215 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1215
+ArrayIsDynamic
+The function checks whether an array is dynamic.
+bool  ArrayIsDynamic(
+   const void&  array[]    // checked array
+   );
+Parameters
+array[]
+[in]  Checked array.
+Return Value
+It returns true if the selected array is dynamic, otherwise it returns false.
+Example:
+#property description "This indicator does not calculate values. It makes a single att
+#property description "apply the call of ArrayFree() function to three arrays: dynamic
+#property description "an indicator buffer. Results are shown in Experts journal."
+//--- indicator settings
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//--- global variables
+double ExtDynamic[];   // dynamic array
+double ExtStatic[100]; // static array
+bool   ExtFlag=true;   // flag
+double ExtBuff[];      // indicator buffer
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- allocate memory for the array
+   ArrayResize(ExtDynamic,100);
+//--- indicator buffers mapping
+   SetIndexBuffer(0,ExtBuff);
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const int begin,
+                const double &price[])
+
+
+--- Page 1216 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1216
+  {
+//--- perform a single analysis
+   if(ExtFlag)
+     {
+      //--- attempt to free memory for arrays
+      //--- 1. Dynamic array
+      Print("+============================+");
+      Print("1. Check dynamic array:");
+      Print("Size before memory is freed = ",ArraySize(ExtDynamic));
+      Print("Is this a dynamic array = ",ArrayIsDynamic(ExtDynamic) ? "Yes" : "No");
+      //--- attempt to free array memory
+      ArrayFree(ExtDynamic);
+      Print("Size after memory is freed = ",ArraySize(ExtDynamic));
+      //--- 2. Static array
+      Print("2. Check static array:");
+      Print("Size before memory is freed = ",ArraySize(ExtStatic));
+      Print("Is this a dynamic array = ",ArrayIsDynamic(ExtStatic) ? "Yes" : "No");
+      //--- attempt to free array memory
+      ArrayFree(ExtStatic);
+      Print("Size after memory is freed = ",ArraySize(ExtStatic));
+      //--- 3. Indicator buffer
+      Print("3. Check indicator buffer:");
+      Print("Size before memory is freed = ",ArraySize(ExtBuff));
+      Print("Is this a dynamic array = ",ArrayIsDynamic(ExtBuff) ? "Yes" : "No");
+      //--- attempt to free array memory
+      ArrayFree(ExtBuff);
+      Print("Size after memory is freed = ",ArraySize(ExtBuff));
+      //--- change the flag value
+      ExtFlag=false;
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+See also
+Access to timeseries and indicators 
+
+
+--- Page 1217 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1217
+ArrayIsSeries
+The function checks whether an array is a timeseries.
+bool  ArrayIsSeries(
+   const void&  array[]    // checked array
+   );
+Parameters
+array[]
+[in]  Checked array.
+Return Value
+It returns true, if a checked array is an array timeseries, otherwise it returns false. Arrays passed as
+a parameter to the OnCalculate() function must be checked for the order of accessing the array
+elements by ArrayGetAsSeries().
+Example:
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//---- plot Label1
+#property indicator_label1  "Label1"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  1
+//--- indicator buffers
+double         Label1Buffer[];
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+void OnInit()
+  {
+//--- indicator buffers mapping
+   SetIndexBuffer(0,Label1Buffer,INDICATOR_DATA);
+//---
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+
+
+--- Page 1218 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1218
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+//---
+   if(ArrayIsSeries(open))
+      Print("open[] is timeseries");
+   else
+      Print("open[] is not timeseries!!!");
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+See also
+Access to timeseries and indicators 
+
+
+--- Page 1219 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1219
+ArrayMaximum
+Searches for the largest element in the first dimension of a multidimensional numeric array.
+int  ArrayMaximum(
+   const void&   array[],             // array for search
+   int           start=0,             // index to start checking with
+   int           count=WHOLE_ARRAY    // number of checked elements
+   );
+Parameters
+array[]
+[in]  A numeric array, in which search is made.
+start=0
+[in]  Index to start checking with.
+count=WHOLE_ARRAY
+[in]  Number of elements for search. By default, 
+searches 
+in 
+the 
+entire 
+array
+(count=WHOLE_ARRAY).
+Return Value
+The function returns an index of a found element taking into account the array serial. In case of
+failure it returns -1.
+Note
+The AS_SERIES flag value is taken into account while searching for a maximum.
+Functions ArrayMaximum and ArrayMinimum accept any-dimensional arrays as a parameter.
+However, searching is always applied to the first (zero) dimension.
+Example:
+#property description "The indicator displays larger timeframe's candlesticks on the c
+//--- indicator settings
+#property indicator_chart_window
+#property indicator_buffers 16
+#property indicator_plots   8
+//---- plot 1
+#property indicator_label1  "BearBody"
+#property indicator_color1  clrSeaGreen,clrSeaGreen
+//---- plot 2
+#property indicator_label2  "BearBodyEnd"
+#property indicator_color2  clrSeaGreen,clrSeaGreen
+//---- plot 3
+#property indicator_label3  "BearShadow"
+#property indicator_color3  clrSalmon,clrSalmon
+//---- plot 4
+#property indicator_label4  "BearShadowEnd"
+#property indicator_color4  clrSalmon,clrSalmon
+
+
+--- Page 1220 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1220
+//---- plot 5
+#property indicator_label5  "BullBody"
+#property indicator_color5  clrOlive,clrOlive
+//---- plot 6
+#property indicator_label6  "BullBodyEnd"
+#property indicator_color6  clrOlive,clrOlive
+//---- plot 7
+#property indicator_label7  "BullShadow"
+#property indicator_color7  clrSkyBlue,clrSkyBlue
+//---- plot 8
+#property indicator_label8  "BullShadowEnd"
+#property indicator_color8  clrSkyBlue,clrSkyBlue
+//--- predefined constant
+#define INDICATOR_EMPTY_VALUE 0.0
+//--- input parameters
+input ENUM_TIMEFRAMES InpPeriod=PERIOD_H4;              // Time frame for the indicato
+input datetime        InpDateStart=D'2013.01.01 00:00'; // Analysis start date
+//--- indicator buffers for bearish candlesticks
+double   ExtBearBodyFirst[];
+double   ExtBearBodySecond[];
+double   ExtBearBodyEndFirst[];
+double   ExtBearBodyEndSecond[];
+double   ExtBearShadowFirst[];
+double   ExtBearShadowSecond[];
+double   ExtBearShadowEndFirst[];
+double   ExtBearShadowEndSecond[];
+//--- indicator buffers for bullish candlesticks
+double   ExtBullBodyFirst[];
+double   ExtBullBodySecond[];
+double   ExtBullBodyEndFirst[];
+double   ExtBullBodyEndSecond[];
+double   ExtBullShadowFirst[];
+double   ExtBullShadowSecond[];
+double   ExtBullShadowEndFirst[];
+double   ExtBullShadowEndSecond[];
+//--- global variables
+datetime ExtTimeBuff[];      // larger time frame's time buffer
+int      ExtSize=0;          // time buffer size
+int      ExtCount=0;         // index inside time buffer
+int      ExtStartPos=0;      // initial position for the indicator calculation
+bool     ExtStartFlag=true;  // auxiliary flag for receiving the initial position
+datetime ExtCurrentTime[1];  // last time of the larger time frame's bar generation
+datetime ExtLastTime;        // last time from the larger time frame, for which the ca
+bool     ExtBearFlag=true;   // flag for defining the order of writing the data to bea
+bool     ExtBullFlag=true;   // flag for defining the order of writing the data to bul
+int      ExtIndexMax=0;      // index of the maximum element in the array
+int      ExtIndexMin=0;      // index of the minimum element in the array
+int      ExtDirectionFlag=0; // price movement direction for the current candlestick
+//--- shift between the candlestick's open and close price for correct drawing
+
+
+--- Page 1221 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1221
+const double ExtEmptyBodySize=0.2*SymbolInfoDouble(Symbol(),SYMBOL_POINT);
+//+------------------------------------------------------------------+
+//| Filling the basic part of the candlestick                        |
+//+------------------------------------------------------------------+
+void FillCandleMain(const double &open[],const double &close[],
+                    const double &high[],const double &low[],
+                    const int start,const int last,const int fill_index,
+                    int &index_max,int &index_min)
+  {
+//--- find the index of the maximum and minimum elements in the arrays
+   index_max=ArrayMaximum(high,ExtStartPos,last-start+1); // maximum in High
+   index_min=ArrayMinimum(low,ExtStartPos,last-start+1);  // minimum in Low
+//--- define how many bars from the current time frame are to be filled out
+   int count=fill_index-start+1;
+//--- if the close price at the first bar exceeds the one at the last bar, the candles
+   if(open[start]>close[last])
+     {
+      //--- if the candlestick has been bullish before that, clear the values of bulli
+      if(ExtDirectionFlag!=-1)
+         ClearCandle(ExtBullBodyFirst,ExtBullBodySecond,ExtBullShadowFirst,ExtBullShad
+      //--- bearish candlestick
+      ExtDirectionFlag=-1;
+      //--- generate the candlestick
+      FormCandleMain(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShad
+                     close[last],high[index_max],low[index_min],start,count,ExtBearFla
+      //--- exit the function
+      return;
+     }
+//--- if the close price at the first bar is less than the one at the last bar, the ca
+   if(open[start]<close[last])
+     {
+      //--- if the candlestick has been bearish before that, clear the values of beari
+      if(ExtDirectionFlag!=1)
+         ClearCandle(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShad
+      //--- bullish candlestick
+      ExtDirectionFlag=1;
+      //--- generate the candlestick
+      FormCandleMain(ExtBullBodyFirst,ExtBullBodySecond,ExtBullShadowFirst,ExtBullShad
+                     open[start],high[index_max],low[index_min],start,count,ExtBullFla
+      //--- exit the function             
+      return;
+     }
+//--- if you are in this part of the function, the open price at the first bar is equa
+//--- the close price at the last bar; such candlestick is considered bearish
+//--- if the candlestick has been bullish before that, clear the values of bullish ind
+   if(ExtDirectionFlag!=-1)
+      ClearCandle(ExtBullBodyFirst,ExtBullBodySecond,ExtBullShadowFirst,ExtBullShadowS
+//--- bearish candlestick
+   ExtDirectionFlag=-1;
+
+
+--- Page 1222 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1222
+//--- if close and open prices are equal, use the shift for correct display
+   if(high[index_max]!=low[index_min])
+      FormCandleMain(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShad
+                     open[start]-ExtEmptyBodySize,high[index_max],low[index_min],start
+   else
+      FormCandleMain(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShad
+                     open[start],open[start]-ExtEmptyBodySize,high[index_max],
+                     high[index_max]-ExtEmptyBodySize,start,count,ExtBearFlag);
+  }
+//+------------------------------------------------------------------+
+//| Fill out the end of the candlestick                              |
+//+------------------------------------------------------------------+
+void FillCandleEnd(const double &open[],const double &close[],
+                   const double &high[],const double &low[],
+                   const int start,const int last,const int fill_index,
+                   const int index_max,const int index_min)
+  {
+//--- do not draw in case of a single bar
+   if(last-start==0)
+      return;
+//--- if the close price at the first bar exceeds the one at the last bar, the candles
+   if(open[start]>close[last])
+     {
+      //--- generate the end of the candlestick
+      FormCandleEnd(ExtBearBodyEndFirst,ExtBearBodyEndSecond,ExtBearShadowEndFirst,Ext
+                    open[start],close[last],high[index_max],low[index_min],fill_index,
+      //--- exit the function
+      return;
+     }
+//--- if the close price at the first bar is less than the one at the last bar, the ca
+   if(open[start]<close[last])
+     {
+      //--- generate the end of the candlestick
+      FormCandleEnd(ExtBullBodyEndFirst,ExtBullBodyEndSecond,ExtBullShadowEndFirst,Ext
+                    close[last],open[start],high[index_max],low[index_min],fill_index,
+      //--- exit the function
+      return;
+     }
+//--- if you are in this part of the function, the open price at the first bar is equa
+//--- the close price at the last bar; such candlestick is considered bearish
+//--- generate the end of the candlestick
+   if(high[index_max]!=low[index_min])
+      FormCandleEnd(ExtBearBodyEndFirst,ExtBearBodyEndSecond,ExtBearShadowEndFirst,Ext
+                    open[start]-ExtEmptyBodySize,high[index_max],low[index_min],fill_i
+   else
+      FormCandleEnd(ExtBearBodyEndFirst,ExtBearBodyEndSecond,ExtBearShadowEndFirst,Ext
+                    open[start]-ExtEmptyBodySize,high[index_max],high[index_max]-ExtEm
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 1223 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1223
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- check the indicator period
+   if(!CheckPeriod((int)Period(),(int)InpPeriod))
+      return(INIT_PARAMETERS_INCORRECT);
+//--- display price data in the foreground
+   ChartSetInteger(0,CHART_FOREGROUND,0,1);
+//--- binding indicator buffers
+   SetIndexBuffer(0,ExtBearBodyFirst);
+   SetIndexBuffer(1,ExtBearBodySecond);
+   SetIndexBuffer(2,ExtBearBodyEndFirst);
+   SetIndexBuffer(3,ExtBearBodyEndSecond);
+   SetIndexBuffer(4,ExtBearShadowFirst);
+   SetIndexBuffer(5,ExtBearShadowSecond);
+   SetIndexBuffer(6,ExtBearShadowEndFirst);
+   SetIndexBuffer(7,ExtBearShadowEndSecond);
+   SetIndexBuffer(8,ExtBullBodyFirst);
+   SetIndexBuffer(9,ExtBullBodySecond);
+   SetIndexBuffer(10,ExtBullBodyEndFirst);
+   SetIndexBuffer(11,ExtBullBodyEndSecond);
+   SetIndexBuffer(12,ExtBullShadowFirst);
+   SetIndexBuffer(13,ExtBullShadowSecond);
+   SetIndexBuffer(14,ExtBullShadowEndFirst);
+   SetIndexBuffer(15,ExtBullShadowEndSecond);
+//--- set some property values for creating the indicator
+   for(int i=0;i<8;i++)
+     {
+      PlotIndexSetInteger(i,PLOT_DRAW_TYPE,DRAW_FILLING); // graphical construction ty
+      PlotIndexSetInteger(i,PLOT_LINE_STYLE,STYLE_SOLID); // drawing line style
+      PlotIndexSetInteger(i,PLOT_LINE_WIDTH,1);           // drawing line width
+     }
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+
+
+--- Page 1224 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1224
+  {
+//--- in case there are no calculated bars yet
+   if(prev_calculated==0)
+     {
+      //--- receive larger time frame's bars arrival time
+      if(!GetTimeData())
+         return(0);
+     }
+//--- set direct indexing
+   ArraySetAsSeries(time,false);
+   ArraySetAsSeries(high,false);
+   ArraySetAsSeries(low,false);
+   ArraySetAsSeries(open,false);
+   ArraySetAsSeries(close,false);
+//--- start variable for calculation of bars
+   int start=prev_calculated;
+//--- if the bar is generated, recalculate the indicator value on it
+   if(start!=0 && start==rates_total)
+      start--;
+//--- the loop for calculating the indicator values
+   for(int i=start;i<rates_total;i++)
+     {
+      //--- fill i elements of the indicator buffers by empty values
+      FillIndicatorBuffers(i);
+      //--- perform calculation for bars starting from InpDateStart date
+      if(time[i]>=InpDateStart)
+        {
+         //--- define position, from which the values are to be displayed, for the fir
+         if(ExtStartFlag)
+           {
+            //--- store the number of the initial bar
+            ExtStartPos=i;
+            //--- define the first date from the larger time frame exceeding time[i]
+            while(time[i]>=ExtTimeBuff[ExtCount])
+               if(ExtCount<ExtSize-1)
+                  ExtCount++;
+            //--- change the value of the flag in order not to run into this block aga
+            ExtStartFlag=false;
+           }
+         //--- check if there are still any elements in the array
+         if(ExtCount<ExtSize)
+           {
+            //--- wait for the current time frame's value to reach the larger time fra
+            if(time[i]>=ExtTimeBuff[ExtCount])
+              {
+               //--- draw the main part of the candlestick (without filling out the ar
+               FillCandleMain(open,close,high,low,ExtStartPos,i-1,i-2,ExtIndexMax,ExtI
+               //--- fill out the end of the candlestick (the area between the last an
+               FillCandleEnd(open,close,high,low,ExtStartPos,i-1,i-1,ExtIndexMax,ExtIn
+
+
+--- Page 1225 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1225
+               //--- shift the initial position for drawing the next candlestick
+               ExtStartPos=i;
+               //--- increase the array counter
+               ExtCount++;
+              }
+            else
+               continue;
+           }
+         else
+           {
+            //--- reset the array values
+            ResetLastError();
+            //--- receive the last date from the larger time frame
+            if(CopyTime(Symbol(),InpPeriod,0,1,ExtCurrentTime)==-1)
+              {
+               Print("Data copy error, code = ",GetLastError());
+               return(0);
+              }
+            //--- if the new date is later, stop generating the candlestick
+            if(ExtCurrentTime[0]>ExtLastTime)
+              {
+               //--- clear the area between the last and penultimate bars in the main 
+               ClearEndOfBodyMain(i-1);
+               //--- fill out the area using auxiliary indicator buffers
+               FillCandleEnd(open,close,high,low,ExtStartPos,i-1,i-1,ExtIndexMax,ExtIn
+               //--- shift the initial position for drawing the next candlestick
+               ExtStartPos=i;
+               //--- reset price direction flag
+               ExtDirectionFlag=0;
+               //--- store the new last date
+               ExtLastTime=ExtCurrentTime[0];
+              }
+            else
+              {
+               //--- generate the candlestick
+               FillCandleMain(open,close,high,low,ExtStartPos,i,i,ExtIndexMax,ExtIndex
+              }
+           }
+        }
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+//+------------------------------------------------------------------+
+//| Check correctness of the specified indicator period              |
+//+------------------------------------------------------------------+
+bool CheckPeriod(int current_period,int high_period)
+  {
+//--- the indicator period should exceed the timeframe on which it is displayed
+
+
+--- Page 1226 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1226
+   if(current_period>=high_period)
+     {
+      Print("Error! The value of the indicator period should exceed the value of the c
+      return(false);
+     }
+//--- if the indicator period is one week or month, the period is correct
+   if(high_period>32768)
+      return(true);
+//--- convert period values to minutes
+   if(high_period>30)
+      high_period=(high_period-16384)*60;
+   if(current_period>30)
+      current_period=(current_period-16384)*60;
+//--- the indicator period should be multiple of the time frame it is displayed on
+   if(high_period%current_period!=0)
+     {
+      Print("Error! The value of the indicator period should be multiple of the value 
+      return(false);
+     }
+//--- the indicator period should exceed the time frame it is displayed on 3 or more t
+   if(high_period/current_period<3)
+     {
+      Print("Error! The indicator period should exceed the current time frame 3 or mor
+      return(false);
+     }
+//--- the indicator period is correct for the current time frame
+   return(true);
+  }
+//+------------------------------------------------------------------+
+//| Receive time data from the larger time frame                     |
+//+------------------------------------------------------------------+
+bool GetTimeData(void)
+  {
+//--- reset the error value
+   ResetLastError();
+//--- copy all data for the current time
+   if(CopyTime(Symbol(),InpPeriod,InpDateStart,TimeCurrent(),ExtTimeBuff)==-1)
+     {
+      //--- receive the error code
+      int code=GetLastError();
+      //--- print out the error message
+      PrintFormat("Data copy error! %s",code==4401
+                  ? "History is still being uploaded!"
+                  : "Code = "+IntegerToString(code));
+      //--- return false to make a repeated attempt to download data
+      return(false);
+     }
+//--- receive the array size
+   ExtSize=ArraySize(ExtTimeBuff);
+
+
+--- Page 1227 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1227
+//--- set the loop index for the array to zero
+   ExtCount=0;
+//--- set the current candlestick's position on the time frame to zero
+   ExtStartPos=0;
+   ExtStartFlag=true;
+//--- store the last time value from the larger time frame
+   ExtLastTime=ExtTimeBuff[ExtSize-1];
+//--- successful execution
+   return(true);
+  }
+//+--------------------------------------------------------------------------+
+//| Function forms the main part of the candlestick. Depending on the flag's |
+//| value, the function defines what data and arrays are                     |
+//| to be used for correct display.                                          |
+//+--------------------------------------------------------------------------+
+void FormCandleMain(double &body_fst[],double &body_snd[],
+                    double &shadow_fst[],double &shadow_snd[],
+                    const double fst_value,const double snd_value,
+                    const double fst_extremum,const double snd_extremum,
+                    const int start,const int count,const bool flag)
+  {
+//--- check the flag's value
+   if(flag)
+     {
+      //--- generate the candlestick's body
+      FormMain(body_fst,body_snd,fst_value,snd_value,start,count);
+      //--- generate the candlestick's shadow
+      FormMain(shadow_fst,shadow_snd,fst_extremum,snd_extremum,start,count);
+     }
+   else
+     {
+      //--- generate the candlestick's body
+      FormMain(body_fst,body_snd,snd_value,fst_value,start,count);
+      //--- generate the candlestick's shadow
+      FormMain(shadow_fst,shadow_snd,snd_extremum,fst_extremum,start,count);
+     }
+  }
+//+-------------------------------------------------------------------------------+
+//| The function forms the end of the candlestick. Depending on the flag's value, |
+//| the function defines what data and arrays are                                 |
+//| to be used for correct display.                                               |
+//+-------------------------------------------------------------------------------+
+void FormCandleEnd(double &body_fst[],double &body_snd[],
+                   double &shadow_fst[],double &shadow_snd[],
+                   const double fst_value,const double snd_value,
+                   const double fst_extremum,const double snd_extremum,
+                   const int end,bool &flag)
+  {
+//--- check the flag's value
+
+
+--- Page 1228 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1228
+   if(flag)
+     {
+      //--- generate the end of the candlestick's body
+      FormEnd(body_fst,body_snd,fst_value,snd_value,end);
+      //--- generate the end of the candlestick's shadow
+      FormEnd(shadow_fst,shadow_snd,fst_extremum,snd_extremum,end);
+      //--- change the flag's value to the opposite one
+      flag=false;
+     }
+   else
+     {
+      //--- generate the end of the candlestick's body
+      FormEnd(body_fst,body_snd,snd_value,fst_value,end);
+      //--- generate the end of the candlestick's shadow
+      FormEnd(shadow_fst,shadow_snd,snd_extremum,fst_extremum,end);
+      //--- change the flag's value to the opposite one
+      flag=true;
+     }
+  }
+//+---------------------------------------------------------------------------------+
+//| Clear the end of the candlestick (the area between the last and the penultimate |
+//| bar)                                                                            |
+//+---------------------------------------------------------------------------------+
+void ClearEndOfBodyMain(const int ind)
+  {
+   ClearCandle(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShadowSeco
+   ClearCandle(ExtBullBodyFirst,ExtBullBodySecond,ExtBullShadowFirst,ExtBullShadowSeco
+  }
+//+--------------------------------------------------------------------------+
+//| Clear the candlestick                                                    |
+//+--------------------------------------------------------------------------+
+void ClearCandle(double &body_fst[],double &body_snd[],double &shadow_fst[],
+                 double &shadow_snd[],const int start,const int count)
+  {
+//--- check
+   if(count!=0)
+     {
+      //--- fill indicator buffers with empty values
+      ArrayFill(body_fst,start,count,INDICATOR_EMPTY_VALUE);
+      ArrayFill(body_snd,start,count,INDICATOR_EMPTY_VALUE);
+      ArrayFill(shadow_fst,start,count,INDICATOR_EMPTY_VALUE);
+      ArrayFill(shadow_snd,start,count,INDICATOR_EMPTY_VALUE);
+     }
+  }
+//+--------------------------------------------------------------------------+
+//| Generate the main part of the candlestick                                |
+//+--------------------------------------------------------------------------+
+void FormMain(double &fst[],double &snd[],const double fst_value,
+              const double snd_value,const int start,const int count)
+
+
+--- Page 1229 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1229
+  {
+//--- check
+   if(count!=0)
+     {
+      //--- fill indicator buffers with values
+      ArrayFill(fst,start,count,fst_value);
+      ArrayFill(snd,start,count,snd_value);
+     }
+  }
+//+-----------------------------------------------------------------------------+
+//| Generate the end of the candlestick                                         |
+//+-----------------------------------------------------------------------------+
+void FormEnd(double &fst[],double &snd[],const double fst_value,
+             const double snd_value,const int last)
+  {
+//--- fill indicator buffers with values
+   ArrayFill(fst,last-1,2,fst_value);
+   ArrayFill(snd,last-1,2,snd_value);
+  }
+//+------------------------------------------------------------------+
+//| Fill i element of the indicator buffers by empty values          |
+//+------------------------------------------------------------------+
+void FillIndicatorBuffers(const int i)
+  {
+//--- set an empty value in the cell of the indicator buffers
+   ExtBearBodyFirst[i]=INDICATOR_EMPTY_VALUE;
+   ExtBearBodySecond[i]=INDICATOR_EMPTY_VALUE;
+   ExtBearShadowFirst[i]=INDICATOR_EMPTY_VALUE;
+   ExtBearShadowSecond[i]=INDICATOR_EMPTY_VALUE;
+   ExtBearBodyEndFirst[i]=INDICATOR_EMPTY_VALUE;
+   ExtBearBodyEndSecond[i]=INDICATOR_EMPTY_VALUE;
+   ExtBearShadowEndFirst[i]=INDICATOR_EMPTY_VALUE;
+   ExtBearShadowEndSecond[i]=INDICATOR_EMPTY_VALUE;
+   ExtBullBodyFirst[i]=INDICATOR_EMPTY_VALUE;
+   ExtBullBodySecond[i]=INDICATOR_EMPTY_VALUE;
+   ExtBullShadowFirst[i]=INDICATOR_EMPTY_VALUE;
+   ExtBullShadowSecond[i]=INDICATOR_EMPTY_VALUE;
+   ExtBullBodyEndFirst[i]=INDICATOR_EMPTY_VALUE;
+   ExtBullBodyEndSecond[i]=INDICATOR_EMPTY_VALUE;
+   ExtBullShadowEndFirst[i]=INDICATOR_EMPTY_VALUE;
+   ExtBullShadowEndSecond[i]=INDICATOR_EMPTY_VALUE;
+  }
+
+
+--- Page 1230 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1230
+ArrayMinimum
+Searches for the lowest element in the first dimension of a multidimensional numeric array.
+int  ArrayMinimum(
+   const void&   array[],             // array for search
+   int           start=0,             // index to start checking with
+   int           count=WHOLE_ARRAY    // number of checked elements
+   );
+Parameters
+array[]
+[in]  A numeric array, in which search is made.
+start=0
+[in]  Index to start checking with.
+count=WHOLE_ARRAY
+[in]  Number of elements for search. By default, 
+searches 
+in 
+the 
+entire 
+array
+(count=WHOLE_ARRAY).
+Return Value
+The function returns an index of a found element taking into account the array serial. In case of
+failure it returns -1.
+Note
+The AS_SERIES flag value is taken into account while searching for a minimum.
+Functions ArrayMaximum and ArrayMinimum accept any-dimensional arrays as a parameter.
+However, searching is always applied to the first (zero) dimension.
+Example:
+#property description "The indicator displays larger timeframe's candlesticks on the c
+//--- indicator settings
+#property indicator_chart_window
+#property indicator_buffers 16
+#property indicator_plots   8
+//---- plot 1
+#property indicator_label1  "BearBody"
+#property indicator_color1  clrSeaGreen,clrSeaGreen
+//---- plot 2
+#property indicator_label2  "BearBodyEnd"
+#property indicator_color2  clrSeaGreen,clrSeaGreen
+//---- plot 3
+#property indicator_label3  "BearShadow"
+#property indicator_color3  clrSalmon,clrSalmon
+//---- plot 4
+#property indicator_label4  "BearShadowEnd"
+#property indicator_color4  clrSalmon,clrSalmon
+
+
+--- Page 1231 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1231
+//---- plot 5
+#property indicator_label5  "BullBody"
+#property indicator_color5  clrOlive,clrOlive
+//---- plot 6
+#property indicator_label6  "BullBodyEnd"
+#property indicator_color6  clrOlive,clrOlive
+//---- plot 7
+#property indicator_label7  "BullShadow"
+#property indicator_color7  clrSkyBlue,clrSkyBlue
+//---- plot 8
+#property indicator_label8  "BullShadowEnd"
+#property indicator_color8  clrSkyBlue,clrSkyBlue
+//--- predefined constant
+#define INDICATOR_EMPTY_VALUE 0.0
+//--- input parameters
+input ENUM_TIMEFRAMES InpPeriod=PERIOD_H4;              // Time frame for the indicato
+input datetime        InpDateStart=D'2013.01.01 00:00'; // Analysis start date
+//--- indicator buffers for bearish candlesticks
+double   ExtBearBodyFirst[];
+double   ExtBearBodySecond[];
+double   ExtBearBodyEndFirst[];
+double   ExtBearBodyEndSecond[];
+double   ExtBearShadowFirst[];
+double   ExtBearShadowSecond[];
+double   ExtBearShadowEndFirst[];
+double   ExtBearShadowEndSecond[];
+//--- indicator buffers for bullish candlesticks
+double   ExtBullBodyFirst[];
+double   ExtBullBodySecond[];
+double   ExtBullBodyEndFirst[];
+double   ExtBullBodyEndSecond[];
+double   ExtBullShadowFirst[];
+double   ExtBullShadowSecond[];
+double   ExtBullShadowEndFirst[];
+double   ExtBullShadowEndSecond[];
+//--- global variables
+datetime ExtTimeBuff[];      // larger time frame's time buffer
+int      ExtSize=0;          // time buffer size
+int      ExtCount=0;         // index inside time buffer
+int      ExtStartPos=0;      // initial position for the indicator calculation
+bool     ExtStartFlag=true;  // auxiliary flag for receiving the initial position
+datetime ExtCurrentTime[1];  // last time of the larger time frame's bar generation
+datetime ExtLastTime;        // last time from the larger time frame, for which the ca
+bool     ExtBearFlag=true;   // flag for defining the order of writing the data to bea
+bool     ExtBullFlag=true;   // flag for defining the order of writing the data to bul
+int      ExtIndexMax=0;      // index of the maximum element in the array
+int      ExtIndexMin=0;      // index of the minimum element in the array
+int      ExtDirectionFlag=0; // price movement direction for the current candlestick
+//--- shift between the candlestick's open and close price for correct drawing
+
+
+--- Page 1232 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1232
+const double ExtEmptyBodySize=0.2*SymbolInfoDouble(Symbol(),SYMBOL_POINT);
+//+------------------------------------------------------------------+
+//| Filling the basic part of the candlestick                        |
+//+------------------------------------------------------------------+
+void FillCandleMain(const double &open[],const double &close[],
+                    const double &high[],const double &low[],
+                    const int start,const int last,const int fill_index,
+                    int &index_max,int &index_min)
+  {
+//--- find the index of the maximum and minimum elements in the arrays
+   index_max=ArrayMaximum(high,ExtStartPos,last-start+1); // maximum in High
+   index_min=ArrayMinimum(low,ExtStartPos,last-start+1);  // minimum in Low
+//--- define how many bars from the current time frame are to be filled out
+   int count=fill_index-start+1;
+//--- if the close price at the first bar exceeds the one at the last bar, the candles
+   if(open[start]>close[last])
+     {
+      //--- if the candlestick has been bullish before that, clear the values of bulli
+      if(ExtDirectionFlag!=-1)
+         ClearCandle(ExtBullBodyFirst,ExtBullBodySecond,ExtBullShadowFirst,ExtBullShad
+      //--- bearish candlestick
+      ExtDirectionFlag=-1;
+      //--- generate the candlestick
+      FormCandleMain(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShad
+                     close[last],high[index_max],low[index_min],start,count,ExtBearFla
+      //--- exit the function
+      return;
+     }
+//--- if the close price at the first bar is less than the one at the last bar, the ca
+   if(open[start]<close[last])
+     {
+      //--- if the candlestick has been bearish before that, clear the values of beari
+      if(ExtDirectionFlag!=1)
+         ClearCandle(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShad
+      //--- bullish candlestick
+      ExtDirectionFlag=1;
+      //--- generate the candlestick
+      FormCandleMain(ExtBullBodyFirst,ExtBullBodySecond,ExtBullShadowFirst,ExtBullShad
+                     open[start],high[index_max],low[index_min],start,count,ExtBullFla
+      //--- exit the function             
+      return;
+     }
+//--- if you are in this part of the function, the open price at the first bar is equa
+//--- the close price at the last bar; such candlestick is considered bearish
+//--- if the candlestick has been bullish before that, clear the values of bullish ind
+   if(ExtDirectionFlag!=-1)
+      ClearCandle(ExtBullBodyFirst,ExtBullBodySecond,ExtBullShadowFirst,ExtBullShadowS
+//--- bearish candlestick
+   ExtDirectionFlag=-1;
+
+
+--- Page 1233 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1233
+//--- if close and open prices are equal, use the shift for correct display
+   if(high[index_max]!=low[index_min])
+      FormCandleMain(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShad
+                     open[start]-ExtEmptyBodySize,high[index_max],low[index_min],start
+   else
+      FormCandleMain(ExtBearBodyFirst,ExtBearBodySecond,ExtBearShadowFirst,ExtBearShad
+                     open[start],open[start]-ExtEmptyBodySize,high[index_max],
+                     high[index_max]-ExtEmptyBodySize,start,count,ExtBearFlag);
+  }
+//+------------------------------------------------------------------+
+//| Fill out the end of the candlestick                              |
+//+------------------------------------------------------------------+
+void FillCandleEnd(const double &open[],const double &close[],
+                   const double &high[],const double &low[],
+                   const int start,const int last,const int fill_index,
+                   const int index_max,const int index_min)
+  {
+//--- do not draw in case of a single bar
+   if(last-start==0)
+      return;
+//--- if the close price at the first bar exceeds the one at the last bar, the candles
+   if(open[start]>close[last])
+     {
+      //--- generate the end of the candlestick
+      FormCandleEnd(ExtBearBodyEndFirst,ExtBearBodyEndSecond,ExtBearShadowEndFirst,Ext
+                    open[start],close[last],high[index_max],low[index_min],fill_index,
+      //--- exit the function
+      return;
+     }
+//--- if the close price at the first bar is less than the one at the last bar, the ca
+   if(open[start]<close[last])
+     {
+      //--- generate the end of the candlestick
+      FormCandleEnd(ExtBullBodyEndFirst,ExtBullBodyEndSecond,ExtBullShadowEndFirst,Ext
+                    close[last],open[start],high[index_max],low[index_min],fill_index,
+      //--- exit the function
+      return;
+     }
+//--- if you are in this part of the function, the open price at the first bar is equa
+//--- the close price at the last bar; such candlestick is considered bearish
+//--- generate the end of the candlestick
+   if(high[index_max]!=low[index_min])
+      FormCandleEnd(ExtBearBodyEndFirst,ExtBearBodyEndSecond,ExtBearShadowEndFirst,Ext
+                    open[start]-ExtEmptyBodySize,high[index_max],low[index_min],fill_i
+   else
+      FormCandleEnd(ExtBearBodyEndFirst,ExtBearBodyEndSecond,ExtBearShadowEndFirst,Ext
+                    open[start]-ExtEmptyBodySize,high[index_max],high[index_max]-ExtEm
+  }
+//+------------------------------------------------------------------+
+
+
+--- Page 1234 ---
+Array Functions
+© 2000-2025, MetaQuotes Ltd.
+1234
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- check the indicator period
+   if(!CheckPeriod((int)Period(),(int)InpPeriod))
+      return(INIT_PARAMETERS_INCORRECT);
+//--- display price data in the foreground
+   ChartSetInteger(0,CHART_FOREGROUND,0,1);
+//--- binding indicator buffers
+   SetIndexBuffer(0,ExtBearBodyFirst);
+   SetIndexBuffer(1,ExtBearBodySecond);
+   SetIndexBuffer(2,ExtBearBodyEndFirst);
+   SetIndexBuffer(3,ExtBearBodyEndSecond);
+   SetIndexBuffer(4,ExtBearShadowFirst);
+   SetIndexBuffer(5,ExtBearShadowSecond);
+   SetIndexBuffer(6,ExtBearShadowEndFirst);
+   SetIndexBuffer(7,ExtBearShadowEndSecond);
+   SetIndexBuffer(8,ExtBullBodyFirst);
+   SetIndexBuffer(9,ExtBullBodySecond);
+   SetIndexBuffer(10,ExtBullBodyEndFirst);
+   SetIndexBuffer(11,ExtBullBodyEndSecond);
+   SetIndexBuffer(12,ExtBullShadowFirst);
+   SetIndexBuffer(13,ExtBullShadowSecond);
+   SetIndexBuffer(14,ExtBullShadowEndFirst);
+   SetIndexBuffer(15,ExtBullShadowEndSecond);
+//--- set some property values for creating the indicator
+   for(int i=0;i<8;i++)
+     {
+      PlotIndexSetInteger(i,PLOT_DRAW_TYPE,DRAW_FILLING); // graphical construction ty
+      PlotIndexSetInteger(i,PLOT_LINE_STYLE,STYLE_SOLID); // drawing line style
+      PlotIndexSetInteger(i,PLOT_LINE_WIDTH,1);           // drawing line width
+     }
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])

@@ -1,0 +1,2144 @@
+=== File Functions (Pages 2446-2557) ===
+
+--- Page 2446 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2446
+File Functions
+This is a group of functions for working with files.
+For security reasons, work with files is strictly controlled in the MQL5 language. Files with which file
+operations are conducted using MQL5 means cannot be outside the file sandbox.
+There are two directories (with subdirectories) in which working files can be located:
+· terminal_data_folder\MQL5\FILES\ (in the terminal menu select to view "File" - "Open the data
+directory");
+· the common folder for all the terminals installed on a computer - usually located in the directory C:
+\Documents and Settings\All Users\Application Data\MetaQuotes\Terminal\Common\Files. 
+There is a program method to obtain names of these catalogs using the TerminalInfoString() function,
+using the ENUM_TERMINAL_INFO_STRING enumeration:
+//--- Folder that stores the terminal data
+   string terminal_data_path=TerminalInfoString(TERMINAL_DATA_PATH);
+//--- Common folder for all client terminals
+   string common_data_path=TerminalInfoString(TERMINAL_COMMONDATA_PATH);
+Work with files from other directories is prohibited. 
+If the file is opened for writing using FileOpen(), all subfolders specified in the path will be created if
+there are no such ones.
+File functions allow working with so-called "named pipes". To do this, simply call FileOpen() function
+with appropriate parameters. 
+Function
+Action
+FileSelectDialog
+Create a file or folder opening/creation dialog
+FileFindFirst
+Starts the search of files in a directory in accordance with the
+specified filter
+FileFindNext
+Continues the search started by the FileFindFirst() function
+FileFindClose
+Closes search handle
+FileOpen
+Opens a file with a specified name and flag
+FileDelete
+Deletes a specified file
+FileFlush
+Writes to a disk all data remaining in the input/output file buffer
+FileGetInteger
+Gets an integer property of a file
+FileIsEnding
+Defines the end of a file in the process of reading
+FileIsLineEnding
+Defines the end of a line in a text file in the process of reading
+FileClose
+Closes a previously opened file
+FileIsExist
+Checks the existence of a file
+
+
+--- Page 2447 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2447
+Function
+Action
+FileCopy
+Copies the original file from a local or shared folder to another file
+FileMove
+Moves or renames a file
+FileReadArray
+Reads arrays of any type except for string from the file of the BIN
+type
+FileReadBool
+Reads from the file of the CSV type a string from the current
+position till a delimiter (or till the end of a text line) and converts
+the read string to a value of bool type
+FileReadDatetime
+Reads from the file of the CSV type a string of one of the formats:
+"YYYY.MM.DD HH:MM:SS", "YYYY.MM.DD" or "HH:MM:SS" - and
+converts it into a datetime value
+FileReadDouble
+Reads a double value from the current position of the file pointer
+FileReadFloat
+Reads a float value from the current position of the file pointer
+FileReadInteger
+Reads int, short or char value from the current position of the file
+pointer
+FileReadLong
+Reads a long type value from the current position of the file pointer
+FileReadNumber
+Reads from the file of the CSV type a string from the current
+position till a delimiter (or til the end of a text line) and converts the
+read string into double value
+FileReadString
+Reads a string from the current position of a file pointer from a file
+FileReadStruct
+Reads the contents from a binary file  into a structure passed as a
+parameter, from the current position of the file pointer
+FileSeek
+Moves the position of the file pointer by a specified number of bytes
+relative to the specified position
+FileSize
+Returns the size of a corresponding open file
+FileTell
+Returns the current position of the file pointer of a corresponding
+open file
+FileWrite
+Writes data to a file of CSV or TXT type
+FileWriteArray
+Writes arrays of any type except for string into a file of BIN type
+FileWriteDouble
+Writes value of the double type from the current position of a file
+pointer into a binary file
+FileWriteFloat
+Writes value of the float type from the current position of a file
+pointer into a binary file
+FileWriteInteger
+ Writes value of the int type from the current position of a file pointer
+into a binary file
+FileWriteLong
+Writes value of the long type from the current position of a file
+pointer into a binary file
+
+
+--- Page 2448 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2448
+Function
+Action
+FileWriteString
+Writes the value of a string parameter into a BIN or TXT file starting
+from the current position of the file pointer
+FileWriteStruct
+Writes the contents of a structure passed as a parameter into a
+binary file, starting from the current position of the file pointer
+FileLoad
+Reads all data of a specified binary file into a passed array of
+numeric types or simple structures
+FileSave
+Writes to a binary file all elements of an array passed as a
+parameter
+FolderCreate
+Creates a folder in the Files directory
+FolderDelete
+Removes a selected directory. If the folder is not empty, then it can't
+be removed
+FolderClean
+Deletes all files in the specified folder
+
+
+--- Page 2449 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2449
+FileSelectDialog
+Create a file or folder opening/creation dialog.
+int  FileSelectDialog(
+   string   caption,              // window header
+   string   initial_dir,          // initial directory
+   string   filter,               // extension filter
+   uint     flags,                // combination of flags
+   string&  filenames[],          // array with file names
+   string   default_filename      // default file name
+   );
+Parameters
+caption
+[in]  Dialog window header.
+initial_dir
+[in]  Initial directory name relative to MQL5\Files, the contents of which is to be displayed in the
+dialog box. If the value is NULL, MQL5\Files is displayed in the dialog.
+filter
+[in]  Extension filter of the files to be displayed in the selection dialog window. Files of other
+formats are hidden.
+flags
+[in] Combination of flags defining the dialog window mode. The flags are defined as follows: 
+FSD_WRITE_FILE – file open dialog;
+FSD_SELECT_FOLDER – allow selection of folders only;
+FSD_ALLOW_MULTISELECT – allow selection of multiple files;
+FSD_FILE_MUST_EXIST – selected files should exist;
+FSD_COMMON_FOLDER – file is located in the common folder of all client terminals
+\Terminal\Common\Files.
+filenames[]
+[out]  Array of strings the names of selected files/folders are placed to.
+default_filename
+[in]  Default file/folder name. If specified, a name is automatically added to the open dialog and
+returned in the filenames[] array when testing.
+Return Value
+In case of a successful completion, the function returns the number of selected files whose names
+can be obtained in filenames[]. If a user closes the dialog without selecting a file, the function
+returns 0. In case of unsuccessful execution, a value less than 0 is returned. The error code can be
+obtained using GetLastError().
+Note
+
+
+--- Page 2450 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2450
+For reasons of security, working with files is strictly controlled in MQL5 language. Files used in file
+operations by means of MQL5 language cannot be located outside the file sandbox (namely, outside
+the MQL5\Files directory).
+The initial_dir name is searched in the client terminal's directory in MQL5\Files (or
+testing_agent_directory\MQL5\Files in case of testing). If FSD_COMMON_FOLDER is set among the
+flags, the search for the initial directory is performed in the common folder of all client terminals
+\Terminal\Common\Files.
+The filter parameter indicates valid files and should be set in the "<description 1>|<extension 1>|
+<description 2>|<extension 2>..." format, for example, "Text files (*.txt)|*.txt|All files (*.*)|*.*".
+The first extension "Text files (*.txt)|*.txt" is selected as a default file type.
+If filter=NULL, the mask of file selection in the dialog window is "All Files (*.*)|*.*|"
+If the default_filename parameter is set, calling FileSelectDialog() returns 1, while the
+default_filename value itself is copied to the filenames[] array during the non-visualized testing.
+The function cannot be used in custom indicators since calling FileSelectDialog() suspends the thread
+of execution for the whole time while waiting for the user's response. Since all indicators for each
+symbol are executed in a single thread, such suspension makes the operation of all charts on all
+timeframes for this symbol impossible.
+Example:
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- get the names of text files for downloading from the common folder of the client
+   string filenames[];
+   if(FileSelectDialog("Select files to download", NULL, 
+                       "Text files (*.txt)|*.txt|All files (*.*)|*.*", 
+                       FSD_ALLOW_MULTISELECT|FSD_COMMON_FOLDER, filenames, "data.txt")
+     {
+      //--- display the name of each selected file
+      int total=ArraySize(filenames);
+      for(int i=0; i<total; i++)
+         Print(i, ": ", filenames[i]);
+     }
+   else
+     {
+     Print("Files not selected");
+     }
+//---
+  }
+See also
+FileOpen, FileIsExist, FileDelete, FileMove, FolderCreate, FolderDelete, FolderClean, Flags of
+opening files
+
+
+--- Page 2451 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2451
+FileFindFirst
+The function starts the search of files or subdirectories in a directory in accordance with the specified
+filter.
+long  FileFindFirst(
+   const string   file_filter,          // String - search filter
+   string&        returned_filename,    // Name of the file or subdirectory found
+   int            common_flag=0         // Defines the search
+   );
+Parameters
+file_filter
+[in]  Search filter. A subdirectory (or sequence of nested subdirectories) relative to the \Files
+directory, in which files should be searched for, can be specified in the filter.
+returned_filename
+[out]  The returned parameter, where, in case of success, the name of the first found file or
+subdirectory is placed. Only the file name is returned (including the extension), the directories and
+subdirectories are not included no matter if they are specified or not in the search filter.
+common_flag
+[in]  Flag determining the location of the file. If common_flag = FILE_COMMON, then the file is
+located in a shared folder for all client terminals \Terminal\Common\Files. Otherwise, the file is
+located in a local folder.
+Return Value
+Returns handle of the object searched, which should be used for further sorting of files and
+subdirectories by the FileFindNext() function, or INVALID_HANDLE when there is no file and
+subdirectory corresponding to the filter (in the particular case - when the directory is empty). After
+searching, the handle must be closed using the FileFindClose() function.
+Note
+For security reasons, work with files is strictly controlled in the MQL5 language. Files with which file
+operations are conducted using MQL5 means, cannot be outside the file sandbox.
+Example:
+
+
+--- Page 2452 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2452
+//--- display the window of input parameters when launching the script
+#property script_show_inputs
+//--- filter
+input string InpFilter="Dir1\\*";
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   string file_name;
+   string int_dir="";
+   int    i=1,pos=0,last_pos=-1;
+//--- search for the last backslash
+   while(!IsStopped())
+     {
+      pos=StringFind(InpFilter,"\\",pos+1);
+      if(pos>=0)
+         last_pos=pos;
+      else
+         break;
+     }
+//--- the filter contains the folder name
+   if(last_pos>=0)
+      int_dir=StringSubstr(InpFilter,0,last_pos+1);
+//--- get the search handle in the root of the local folder
+   long search_handle=FileFindFirst(InpFilter,file_name);
+//--- check if the FileFindFirst() is executed successfully
+   if(search_handle!=INVALID_HANDLE)
+     {
+      //--- in a loop, check if the passed strings are the names of files or directori
+      do
+        {
+         ResetLastError();
+         //--- if it's a file, the function returns true, and if it's a directory, it 
+         FileIsExist(int_dir+file_name);
+         PrintFormat("%d : %s name = %s",i,GetLastError()==ERR_FILE_IS_DIRECTORY ? "Di
+         i++;
+        }
+      while(FileFindNext(search_handle,file_name));
+      //--- close the search handle
+      FileFindClose(search_handle);
+     }
+   else
+      Print("Files not found!");
+  }
+See also
+FileFindNext, FileFindClose
+
+
+--- Page 2453 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2453
+FileFindNext
+The function continues the search started by FileFindFirst().
+bool  FileFindNext(
+   long      search_handle,         // Search handle
+   string&   returned_filename      // Name of the file or subdirectory found
+   );
+Parameters
+search_handle
+[in]  Search handle, retrieved by FileFindFirst().
+returned_filename
+[out] The name of the next file or subdirectory found. Only the file name is returned (including the
+extension), the directories and subdirectories are not included no matter if they are specified or
+not in the search filter.
+Return Value
+If successful returns true, otherwise false.
+Example:
+//--- display the window of input parameters when launching the script
+#property script_show_inputs
+//--- filter
+input string InpFilter="*";
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   string file_name;
+   int    i=1;
+//--- receive search handle in local folder's root
+   long search_handle=FileFindFirst(InpFilter,file_name);
+//--- check if FileFindFirst() function executed successfully
+   if(search_handle!=INVALID_HANDLE)
+     {
+      //--- check if the passed strings are file or directory names in the loop
+      do
+        {
+         ResetLastError();
+         //--- if this is a file, the function will return true, if it is a directory,
+         FileIsExist(file_name);
+         PrintFormat("%d : %s name = %s",i,GetLastError()==ERR_FILE_IS_DIRECTORY ? "Di
+         i++;
+        }
+      while(FileFindNext(search_handle,file_name));
+
+
+--- Page 2454 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2454
+      //--- close search handle
+      FileFindClose(search_handle);
+     }
+   else
+      Print("Files not found!");
+  }
+See also
+FileFindFirst, FileFindClose
+
+
+--- Page 2455 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2455
+FileFindClose
+The function closes the search handle.
+void  FileFindClose(
+   long  search_handle      //  Search handle
+   );
+Parameters
+search_handle
+[in]  Search handle, retrieved by FileFindFirst().
+Return Value
+No value returned.
+Note
+Function must be called to free up system resources.
+Example:
+//--- display the window of input parameters when launching the script
+#property script_show_inputs
+//--- filter
+input string InpFilter="*";
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   string file_name;
+   int    i=1;
+//--- receive search handle in local folder's root
+   long search_handle=FileFindFirst(InpFilter,file_name);
+//--- check if FileFindFirst() function executed successfully
+   if(search_handle!=INVALID_HANDLE)
+     {
+      //--- check if the passed strings are file or directory names in the loop
+      do
+        {
+         ResetLastError();
+         //--- if this is a file, the function will return true, if it is a directory,
+         FileIsExist(file_name);
+         PrintFormat("%d : %s name = %s",i,GetLastError()==5018 ? "Directory" : "File"
+         i++;
+        }
+      while(FileFindNext(search_handle,file_name));
+      //--- close search handle
+      FileFindClose(search_handle);
+     }
+
+
+--- Page 2456 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2456
+   else
+      Print("Files not found!");
+  }
+See also
+FileFindFirst, FileFindNext
+
+
+--- Page 2457 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2457
+FileIsExist
+Checks the existence of a file.
+bool  FileIsExist(
+   const string  file_name,       // File name
+   int           common_flag=0    // Search area
+   );
+Parameters
+file_name
+[in]  The name of the file being checked
+common_flag=0
+[in]  Flag determining the location of the file. If common_flag = FILE_COMMON, then the file is
+located in a shared folder for all client terminals \Terminal\Common\Files. Otherwise, the file is
+located in a local folder.
+Return Value
+Returns true, if the specified file exists.
+Note
+Checked file can turn out to be a subdirectory. In this case, FileIsExist() function will return false,
+while error 5018 will be logged in _LastError variable - "This is a directory, not a file" (see example
+for FileFindFirst function).
+For security reasons, work with files is strictly controlled in the MQL5 language. Files with which file
+operations are conducted using MQL5 means, cannot be outside the file sandbox.
+If common_flag = FILE_COMMON, then the function looks for the file in a shared folder for all client
+terminals \Terminal\Common\Files, otherwise the function looks for a file in a local folder
+(MQL5\Files or MQL5\Tester\Files in the case of testing).
+Example:
+//--- show the window of input parameters when launching the script
+#property script_show_inputs
+//--- date for old files
+input datetime InpFilesDate=D'2013.01.01 00:00';
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   string   file_name;      // variable for storing file names
+   string   filter="*.txt"; // filter for searching the files
+   datetime create_date;    // file creation date
+   string   files[];        // list of file names
+   int      def_size=25;    // array size by default
+   int      size=0;         // number of files
+
+
+--- Page 2458 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2458
+//--- allocate memory for the array
+   ArrayResize(files,def_size);
+//--- receive the search handle in the local folder's root
+   long search_handle=FileFindFirst(filter,file_name);
+//--- check if FileFindFirst() executed successfully
+   if(search_handle!=INVALID_HANDLE)
+     {
+      //--- searching files in the loop
+      do
+        {
+         files[size]=file_name;
+         //--- increase the array size
+         size++;
+         if(size==def_size)
+           {
+            def_size+=25;
+            ArrayResize(files,def_size);
+           }
+         //--- reset the error value
+         ResetLastError();
+         //--- receive the file creation date
+         create_date=(datetime)FileGetInteger(file_name,FILE_CREATE_DATE,false);
+         //--- check if the file is old
+         if(create_date<InpFilesDate)
+           {
+            PrintFormat("%s file deleted!",file_name);
+            //--- delete the old file
+            FileDelete(file_name);
+           }
+        }
+      while(FileFindNext(search_handle,file_name));
+      //--- close the search handle
+      FileFindClose(search_handle);
+     }
+   else
+     {
+      Print("Files not found!");
+      return;
+     }
+//--- check what files have remained
+   PrintFormat("Results:");
+   for(int i=0;i<size;i++)
+     {
+      if(FileIsExist(files[i]))
+         PrintFormat("%s file exists!",files[i]);
+      else
+         PrintFormat("%s file deleted!",files[i]);
+     }
+  }
+
+
+--- Page 2459 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2459
+See also
+FileFindFirst
+
+
+--- Page 2460 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2460
+FileOpen
+The function opens the file with the specified name and flag.
+int  FileOpen(
+   string  file_name,           // File name
+   int     open_flags,          // Combination of flags
+   short   delimiter='\t',      // Delimiter
+   uint    codepage=CP_ACP      // Code page
+   );
+Parameters
+file_name
+[in]  The name of the file can contain subfolders. If the file is opened for writing, these subfolders
+will be created if there are no such ones.
+open_flags
+[in]  combination of flags determining the operation mode for the file. The flags are defined as
+follows:
+FILE_READ file is opened for reading
+FILE_WRITE file is opened for writing
+FILE_BIN binary read-write mode (no conversion from a string and to a string)
+FILE_CSV file of csv type (all recorded items are converted to the strings of unicode or ansi type,
+and are separated by a delimiter)
+FILE_TXT a simple text file (the same as csv, but the delimiter is not taken into account)
+FILE_ANSI lines of ANSI type (single-byte symbols) 
+FILE_UNICODE lines of UNICODE type (double-byte characters)
+FILE_SHARE_READ shared reading from several programs
+FILE_SHARE_WRITE shared writing from several programs
+FILE_COMMON 
+location 
+of 
+the 
+file 
+in 
+a 
+shared 
+folder 
+for 
+all 
+client 
+terminals
+\Terminal\Common\Files
+delimiter='\t'
+[in]  value to be used as a separator in txt or csv-file. If the csv-file delimiter is not specified, it
+defaults to a tab. If the txt-file delimiter is not specified, then no separator is used. If the
+separator is clearly set to 0, then no separator is used.
+codepage=CP_ACP
+[in]  The value of the code page. For the most-used code pages provide appropriate constants.
+Return Value
+If a file has been opened successfully, the function returns the file handle, which is then used to
+access the file data. In case of failure returns INVALID_HANDLE.
+Note
+For security reasons, work with files is strictly controlled in the MQL5 language. Files with which file
+operations are conducted using MQL5 means, cannot be outside the file sandbox.
+
+
+--- Page 2461 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2461
+Make sure to set the FILE_ANSI flag if the file should be read in a specific encoding (the codepage
+parameter with a code page value is specified). If there is no specified FILE_ANSI flag, the text file
+is read in Unicode without any conversion.
+The file is opened in the folder of the client terminal in the subfolder MQL5\files (or
+testing_agent_directory\MQL5\files in case of testing). If FILE_COMMON is specified among flags,
+the file is opened in a shared folder for all MetaTrader 5 client terminals.
+"Named pipes" can be opened according to the following rules:
+· Pipe name is a string, which should have the following look: "\\servername\pipe\pipename", where
+servername - server name in the network, while pipename is a pipe name. If the pipes are used
+on the same computer, the server name can be omitted but a point should be inserted instead of
+it: "\\.\pipe\pipename". A client trying to connect the pipe should know its name.
+· FileFlush() and FileSeek() should be called to the beginning of a file between sequential operations
+of reading from the pipe and writing to it.
+A special symbol '\' is used in shown strings. Therefore, '\' should be doubled when writing a name in
+MQL5 application. It means that the above example should have the following look in the code: "\\\
+\servername\\pipe\\pipename".
+More information about working with named pipes can be found in the article "Communicating With
+MetaTrader 5 Using Named Pipes Without Using DLLs".
+Example:
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- incorrect file opening method
+   string terminal_data_path=TerminalInfoString(TERMINAL_DATA_PATH);
+   string filename=terminal_data_path+"\\MQL5\\Files\\"+"fractals.csv";
+   int filehandle=FileOpen(filename,FILE_WRITE|FILE_CSV);
+   if(filehandle<0)
+     {
+      Print("Failed to open the file by the absolute path ");
+      Print("Error code ",GetLastError());
+     }
+//--- correct way of working in the "file sandbox"
+   ResetLastError();
+   filehandle=FileOpen("fractals.csv",FILE_WRITE|FILE_CSV);
+   if(filehandle!=INVALID_HANDLE)
+     {
+      FileWrite(filehandle,TimeCurrent(),Symbol(), EnumToString(_Period));
+      FileClose(filehandle);
+      Print("FileOpen OK");
+     }
+   else Print("Operation FileOpen failed, error ",GetLastError());
+//--- another example with the creation of an enclosed directory in MQL5\Files\
+
+
+--- Page 2462 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2462
+   string subfolder="Research";
+   filehandle=FileOpen(subfolder+"\\fractals.txt",FILE_WRITE|FILE_CSV);
+      if(filehandle!=INVALID_HANDLE)
+     {
+      FileWrite(filehandle,TimeCurrent(),Symbol(), EnumToString(_Period));
+      FileClose(filehandle);
+      Print("The file must be created in the folder "+terminal_data_path+"\\"+subfolde
+     }
+   else Print("File open failed, error ",GetLastError());
+  }
+See also
+Use of a Codepage, FileFindFirst, FolderCreate, File opening flags
+
+
+--- Page 2463 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2463
+FileClose
+Close the file previously opened by FileOpen().
+void  FileClose(
+   int  file_handle      // File handle
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+Return Value
+No value returned.
+Example:
+//--- show the window of input parameters when launching the script
+#property script_show_inputs
+//--- input parameters
+input string InpFileName="file.txt";    // file name
+input string InpDirectoryName="Data";   // directory name
+input int    InpEncodingType=FILE_ANSI; // ANSI=32 or UNICODE=64
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- print the path to the file we are going to use
+   PrintFormat("Working %s\\Files\\ folder",TerminalInfoString(TERMINAL_DATA_PATH));
+//--- reset the error value
+   ResetLastError();
+//--- open the file for reading (if the file does not exist, the error will occur)
+   int file_handle=FileOpen(InpDirectoryName+"//"+InpFileName,FILE_READ|FILE_TXT|InpEn
+   if(file_handle!=INVALID_HANDLE)
+     {
+      //--- print the file contents
+      while(!FileIsEnding(file_handle))
+         Print(FileReadString(file_handle));
+      //--- close the file
+      FileClose(file_handle);
+     }
+   else
+      PrintFormat("Error, code = %d",GetLastError());
+  }
+
+
+--- Page 2464 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2464
+FileCopy
+The function copies the original file from a local or shared folder to another file.
+bool  FileCopy(
+   const string  src_file_name,     // Name of a source file
+   int           common_flag,       // Location
+   const string  dst_file_name,     // Name of the destination file
+   int           mode_flags         // Access mode
+   );
+Parameters
+src_file_name
+[in]  File name to copy.
+common_flag
+[in]  Flag determining the location of the file. If common_flag = FILE_COMMON, then the file is
+located in a shared folder for all client terminals \Terminal\Common\Files. Otherwise, the file is
+located in a local folder (for example, common_flag=0).
+dst_file_name
+[in]  Result file name.
+mode_flags
+[in]  Access flags. The parameter can contain only 2 flags: FILE_REWRITE and/or FILE_COMMON -
+other flags are ignored. If the file already exists, and the FILE_REWRITE flag hasn't been
+specified, then the file will not be rewritten, and the function will return false.
+Return Value
+In case of failure the function returns false.
+Note
+For security reasons, work with files is strictly controlled in the MQL5 language. Files with which file
+operations are conducted using MQL5 means, cannot be outside the file sandbox.
+If the new file already exists, the copy will be made depending on the availability of the
+FILE_REWRITE flag in the mode_flags parameter.
+Example:
+//--- display the window of input parameters when launching the script
+#property script_show_inputs
+//--- input parameters
+input string InpSrc="source.txt";       // source
+input string InpDst="destination.txt";  // copy
+input int    InpEncodingType=FILE_ANSI; // ANSI=32 or UNICODE=64
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+
+
+--- Page 2465 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2465
+  {
+//--- display the source contents (it must exist)
+   if(!FileDisplay(InpSrc))
+      return;
+//--- check if the copy file already exists (may not be created)
+   if(!FileDisplay(InpDst))
+     {
+      //--- the copy file does not exist, copying without FILE_REWRITE flag (correct c
+      if(FileCopy(InpSrc,0,InpDst,0))
+         Print("File is copied!");
+      else
+         Print("File is not copied!");
+     }
+   else
+     {
+      //--- the copy file already exists, try to copy without FILE_REWRITE flag (incor
+      if(FileCopy(InpSrc,0,InpDst,0))
+         Print("File is copied!");
+      else
+         Print("File is not copied!");
+      //--- InpDst file's contents remains the same
+      FileDisplay(InpDst);
+      //--- copy once more with FILE_REWRITE flag (correct copying if the file exists)
+      if(FileCopy(InpSrc,0,InpDst,FILE_REWRITE))
+         Print("File is copied!");
+      else
+         Print("File is not copied!");
+     }
+//--- receive InpSrc file copy
+   FileDisplay(InpDst);
+  }
+//+------------------------------------------------------------------+
+//| Read the file contents                                           |
+//+------------------------------------------------------------------+
+bool FileDisplay(const string file_name)
+  {
+//--- reset the error value
+   ResetLastError();
+//--- open the file
+   int file_handle=FileOpen(file_name,FILE_READ|FILE_TXT|InpEncodingType);
+   if(file_handle!=INVALID_HANDLE)
+     {
+      //--- display the file contents in the loop
+      Print("+---------------------+");
+      PrintFormat("File name = %s",file_name);
+      while(!FileIsEnding(file_handle))
+         Print(FileReadString(file_handle));
+      Print("+---------------------+");
+      //--- close the file
+
+
+--- Page 2466 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2466
+      FileClose(file_handle);
+      return(true);
+     }
+//--- failed to open the file
+   PrintFormat("%s is not opened, error = %d",file_name,GetLastError());
+   return(false);
+  }
+
+
+--- Page 2467 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2467
+FileDelete
+Deletes the specified file in a local folder of the client terminal.
+bool  FileDelete(
+   const string  file_name,     // File name to delete 
+   int           common_flag=0  // Location of the file to delete
+   );
+Parameters
+file_name
+[in]  File name.
+common_flag=0
+[in]  Flag determining the file location. If common_flag = FILE_COMMON, then the file is located in
+a shared folder for all client terminals \Terminal\Common\Files. Otherwise, the file is located in a
+local folder.
+Return Value
+In case of failure the function returns false.
+Note
+For security reasons, work with files is strictly controlled in the MQL5 language. Files with which file
+operations are conducted using MQL5 means, cannot be outside the file sandbox.
+Deletes the specified file from a local folder of the client terminal (MQL5\Files or MQL5\Tester\Files
+in case of testing). If common_flag = FILE_COMMON, then the function removes the file from the
+shared folder for all client terminals \Terminal\Common\Files.
+Example:
+//--- show the window of input parameters when launching the script
+#property script_show_inputs
+//--- date for old files
+input datetime InpFilesDate=D'2013.01.01 00:00';
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   string   file_name;      // variable for storing file names
+   string   filter="*.txt"; // filter for searching the files
+   datetime create_date;    // file creation date
+   string   files[];        // list of file names
+   int      def_size=25;    // array size by default
+   int      size=0;         // number of files
+//--- allocate memory for the array
+   ArrayResize(files,def_size);
+//--- receive the search handle in the local folder's root
+   long search_handle=FileFindFirst(filter,file_name);
+
+
+--- Page 2468 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2468
+//--- check if FileFindFirst() executed successfully
+   if(search_handle!=INVALID_HANDLE)
+     {
+      //--- searching files in the loop
+      do
+        {
+         files[size]=file_name;
+         //--- increase the array size
+         size++;
+         if(size==def_size)
+           {
+            def_size+=25;
+            ArrayResize(files,def_size);
+           }
+         //--- reset the error value
+         ResetLastError();
+         //--- receive the file creation date
+         create_date=(datetime)FileGetInteger(file_name,FILE_CREATE_DATE,false);
+         //--- check if the file is old
+         if(create_date<InpFilesDate)
+           {
+            PrintFormat("%s file deleted!",file_name);
+            //--- delete the old file
+            FileDelete(file_name);
+           }
+        }
+      while(FileFindNext(search_handle,file_name));
+      //--- close the search handle
+      FileFindClose(search_handle);
+     }
+   else
+     {
+      Print("Files not found!");
+      return;
+     }
+//--- check what files have remained
+   PrintFormat("Results:");
+   for(int i=0;i<size;i++)
+     {
+      if(FileIsExist(files[i]))
+         PrintFormat("%s file exists!",files[i]);
+      else
+         PrintFormat("%s file deleted!",files[i]);
+     }
+  }
+
+
+--- Page 2469 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2469
+FileMove
+Moves a file from a local or shared folder to another folder.
+bool  FileMove(
+   const string  src_file_name,    // File name for the move operation
+   int           common_flag,      // Location
+   const string  dst_file_name,    // Name of the destination file
+   int           mode_flags        // Access mode
+   );
+Parameters
+src_file_name
+[in]  File name to move/rename.
+common_flag
+[in]  Flag determining the location of the file. If common_flag = FILE_COMMON, then the file is
+located in a shared folder for all client terminals \Terminal\Common\Files. Otherwise, the file is
+located in a local folder (common_flag=0).
+dst_file_name
+[in]  File name after operation
+mode_flags
+[in]  Access flags. The parameter can contain only 2 flags: FILE_REWRITE and/or FILE_COMMON -
+other flags are ignored. If the file already exists and the FILE_REWRITE flag isn't specified, the file
+will not be rewritten, and the function will return false.
+Return Value
+In case of failure the function returns false.
+Note
+For security reasons, work with files is strictly controlled in the MQL5 language. Files with which file
+operations are conducted using MQL5 means, cannot be outside the file sandbox.
+If the new file already exists, the copy will be made depending on the availability of the
+FILE_REWRITE flag in the mode_flags parameter.
+Example:
+//--- display the window of input parameters when launching the script
+#property script_show_inputs
+//--- input parameters
+input string InpSrcName="data.txt";
+input string InpDstName="newdata.txt";
+input string InpSrcDirectory="SomeFolder";
+input string InpDstDirectory="OtherFolder";
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+
+
+--- Page 2470 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2470
+void OnStart()
+  {
+   string local=TerminalInfoString(TERMINAL_DATA_PATH);
+   string common=TerminalInfoString(TERMINAL_COMMONDATA_PATH);
+//--- receive file paths
+   string src_path;
+   string dst_path;
+   StringConcatenate(src_path,InpSrcDirectory,"//",InpSrcName);
+   StringConcatenate(dst_path,InpDstDirectory,"//",InpDstName);
+//--- check if the source file exists (if not - exit)
+   if(FileIsExist(src_path))
+      PrintFormat("%s file exists in the %s\\Files\\%s folder",InpSrcName,local,InpSrc
+   else
+     {
+      PrintFormat("Error, %s source file not found",InpSrcName);
+      return;
+     }
+//--- check if the result file already exists
+   if(FileIsExist(dst_path,FILE_COMMON))
+     {
+      PrintFormat("%s file exists in the %s\\Files\\%s folder",InpDstName,common,InpDs
+      //--- file exists, moving should be performed with FILE_REWRITE flag
+      ResetLastError();
+      if(FileMove(src_path,0,dst_path,FILE_COMMON|FILE_REWRITE))
+         PrintFormat("%s file moved",InpSrcName);
+      else
+         PrintFormat("Error! Code = %d",GetLastError());
+     }
+   else
+     {
+      PrintFormat("%s file does not exist in the %s\\Files\\%s folder",InpDstName,comm
+      //--- the file does not exist, moving should be performed without FILE_REWRITE f
+      ResetLastError();
+      if(FileMove(src_path,0,dst_path,FILE_COMMON))
+         PrintFormat("%s file moved",InpSrcName);
+      else
+         PrintFormat("Error! Code = %d",GetLastError());
+     }
+//--- the file is moved; let's check it out
+   if(FileIsExist(dst_path,FILE_COMMON) && !FileIsExist(src_path,0))
+      Print("Success!");
+   else
+      Print("Error!");
+  }
+See also
+FileIsExist
+
+
+--- Page 2471 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2471
+FileFlush
+Writes to a disk all data remaining in the input/output file buffer.
+void  FileFlush(
+   int  file_handle      // File handle
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+Return Value
+No value returned.
+Note
+When writing to a file, the data may be actually found there only after some time. To save the data
+in the file instantly, use FileFlush() function. If the function is not used, part of the data that has
+not been stored in the disk yet, will be forcibly written there only when the file is closed using
+FileClose() function.
+The function should be used when written data is of a certain value. It should be kept in mind that
+frequent function call may affect the program operation speed.
+Function FileFlush () must be called between the operations of reading from a file and writing to it.
+Example:
+//--- show the window of input parameters when launching the script
+#property script_show_inputs
+//--- file name for writing
+input string InpFileName="example.csv"; // file name
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- reset error value
+   ResetLastError();
+//--- open the file
+   int file_handle=FileOpen(InpFileName,FILE_READ|FILE_WRITE|FILE_CSV);
+   if(file_handle!=INVALID_HANDLE)
+     {
+      //--- write data to the file
+      for(int i=0;i<1000;i++)
+        {
+         //--- call write function
+         FileWrite(file_handle,TimeCurrent(),SymbolInfoDouble(Symbol(),SYMBOL_BID),Sym
+         //--- save data on the disk at each 128th iteration
+         if((i & 127)==127)
+
+
+--- Page 2472 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2472
+           {
+            //--- now, data will be located in the file and will not be lost in case o
+            FileFlush(file_handle);
+            PrintFormat("i = %d, OK",i);
+           }
+         //--- 0.01 second pause
+         Sleep(10);
+        }
+      //--- close the file
+      FileClose(file_handle);
+     }
+   else
+      PrintFormat("Error, code = %d",GetLastError());
+  }
+See also
+FileClose
+
+
+--- Page 2473 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2473
+FileGetInteger
+Gets an integer property of a file. There are two variants of the function.
+1. Get a property by the handle of a file.
+long  FileGetInteger(
+   int                         file_handle,   // File handle
+   ENUM_FILE_PROPERTY_INTEGER  property_id    // Property ID
+   );
+2. Get a property by the file name.
+long  FileGetInteger(
+   const string                file_name,            // File name
+   ENUM_FILE_PROPERTY_INTEGER  property_id,          // Property ID
+   bool                        common_folder=false   // The file is viewed in a local 
+   );                                                // or a common folder of all term
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+file_name
+[in]  File name.
+property_id
+[in]  File property ID. The value can be one of the values of the ENUM_FILE_PROPERTY_INTEGER
+enumeration. If the second variant of the function is used, you can receive only the values of the
+following properties: FILE_EXISTS, FILE_CREATE_DATE, FILE_MODIFY_DATE, FILE_ACCESS_DATE
+and FILE_SIZE.
+common_folder=false
+[in]  Points to the file location. If the parameter is false, terminal data folder is viewed. Otherwise
+it is assumed that the file is in the shared folder of all terminals \Terminal\Common\Files
+(FILE_COMMON).
+Return Value
+The value of the property. In case of an error, -1 is returned. To get an error code use the
+GetLastError() function.
+If a folder is specified when getting properties by the name, the function will have error 5018
+(ERR_MQL_FILE_IS_DIRECTORY) in any case, though the return value will be correct.
+Note
+The function always changes the error code. In case of successful completion the error code is reset
+to NULL.
+Example:
+//--- display the window of input parameters when launching the script
+
+
+--- Page 2474 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2474
+#property script_show_inputs
+//--- input parameters
+input string InpFileName="data.csv";
+input string InpDirectoryName="SomeFolder";
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   string path=InpDirectoryName+"//"+InpFileName;
+   long   l=0;
+//--- open the file
+   ResetLastError();
+   int handle=FileOpen(path,FILE_READ|FILE_CSV);
+   if(handle!=INVALID_HANDLE)
+     {
+      //--- print all information about the file
+      Print(InpFileName," file info:");
+      FileInfo(handle,FILE_EXISTS,l,"bool");
+      FileInfo(handle,FILE_CREATE_DATE,l,"date");
+      FileInfo(handle,FILE_MODIFY_DATE,l,"date");
+      FileInfo(handle,FILE_ACCESS_DATE,l,"date");
+      FileInfo(handle,FILE_SIZE,l,"other");
+      FileInfo(handle,FILE_POSITION,l,"other");
+      FileInfo(handle,FILE_END,l,"bool");
+      FileInfo(handle,FILE_IS_COMMON,l,"bool");
+      FileInfo(handle,FILE_IS_TEXT,l,"bool");
+      FileInfo(handle,FILE_IS_BINARY,l,"bool");
+      FileInfo(handle,FILE_IS_CSV,l,"bool");
+      FileInfo(handle,FILE_IS_ANSI,l,"bool");
+      FileInfo(handle,FILE_IS_READABLE,l,"bool");
+      FileInfo(handle,FILE_IS_WRITABLE,l,"bool");
+      //--- close the file
+      FileClose(handle);
+     }
+   else
+      PrintFormat("%s file is not opened, ErrorCode = %d",InpFileName,GetLastError());
+  }
+//+------------------------------------------------------------------+
+//| Display the value of the file property                           |
+//+------------------------------------------------------------------+
+void FileInfo(const int handle,const ENUM_FILE_PROPERTY_INTEGER id,
+              long l,const string type)
+  {
+//--- receive the property value
+   ResetLastError();
+   if((l=FileGetInteger(handle,id))!=-1)
+     {
+      //--- the value received, display it in the correct format
+
+
+--- Page 2475 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2475
+      if(!StringCompare(type,"bool"))
+         Print(EnumToString(id)," = ",l ? "true" : "false");
+      if(!StringCompare(type,"date"))
+         Print(EnumToString(id)," = ",(datetime)l);
+      if(!StringCompare(type,"other"))
+         Print(EnumToString(id)," = ",l);
+     }
+   else
+      Print("Error, Code = ",GetLastError());
+  }
+See also
+File Operations, File Properties
+
+
+--- Page 2476 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2476
+FileIsEnding
+Defines the end of a file in the process of reading.
+bool  FileIsEnding(
+   int  file_handle      // File handle
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+Return Value
+The function returns true if the file end has been reached in the process of reading or moving of the
+file pointer.
+Note
+To define the end of the file, the function tries to read the next string from it. If the string does not
+exist, the function returns true, otherwise it returns false.
+Example:
+//--- show the window of input parameters when launching the script
+#property script_show_inputs
+//--- input parameters
+input string InpFileName="file.txt";    // file name
+input string InpDirectoryName="Data";   // directory name
+input int    InpEncodingType=FILE_ANSI; // ANSI=32 or UNICODE=64
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- print the path to the file we are going to use
+   PrintFormat("Working %s\\Files\\ folder",TerminalInfoString(TERMINAL_DATA_PATH));
+//--- reset the error value
+   ResetLastError();
+//--- open the file for reading (if the file does not exist, the error will occur)
+   int file_handle=FileOpen(InpDirectoryName+"//"+InpFileName,FILE_READ|FILE_TXT|InpEn
+   if(file_handle!=INVALID_HANDLE)
+     {
+      //--- print the file contents
+      while(!FileIsEnding(file_handle))
+         Print(FileReadString(file_handle));
+      //--- close the file
+      FileClose(file_handle);
+     }
+   else
+      PrintFormat("Error, code = %d",GetLastError());
+
+
+--- Page 2477 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2477
+  }
+
+
+--- Page 2478 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2478
+FileIsLineEnding
+Defines the line end in a text file in the process of reading.
+bool  FileIsLineEnding(
+   int  file_handle      // File handle
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+Return Value
+Returns true if in the process of reading txt or csv-file reached the end of the line (the characters
+CR-LF).
+Example (the file obtained during the execution of an example for FileWriteString function is used
+here)
+//+------------------------------------------------------------------+
+//|                                        Demo_FileIsLineEnding.mq5 |
+//|                        Copyright 2013, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2013, MetaQuotes Software Corp."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property indicator_chart_window
+#property indicator_buffers 5
+#property indicator_plots   1
+//---- plot Label1
+#property indicator_label1  "Overbought & Oversold"
+#property indicator_type1   DRAW_COLOR_BARS
+#property indicator_color1  clrRed, clrBlue
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  2
+//--- parameters for data reading
+input string InpFileName="RSI.csv";   // file name
+input string InpDirectoryName="Data"; // directory name
+//--- indicator buffers
+double   open_buff[];
+double   high_buff[];
+double   low_buff[];
+double   close_buff[];
+double   color_buff[];
+//--- overbought variables
+int      ovb_ind=0;
+int      ovb_size=0;
+datetime ovb_time[];
+
+
+--- Page 2479 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2479
+//--- oversold variables
+int      ovs_ind=0;
+int      ovs_size=0;
+datetime ovs_time[];
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- variables of array sizes by default
+   int ovb_def_size=100;
+   int ovs_def_size=100;
+//--- allocate memory for arrays
+   ArrayResize(ovb_time,ovb_def_size);
+   ArrayResize(ovs_time,ovs_def_size);
+//--- open the file
+   ResetLastError();
+   int file_handle=FileOpen(InpDirectoryName+"//"+InpFileName,FILE_READ|FILE_CSV|FILE_
+   if(file_handle!=INVALID_HANDLE)
+     {
+      PrintFormat("%s file is available for reading",InpFileName);
+      PrintFormat("File path: %s\\Files\\",TerminalInfoString(TERMINAL_DATA_PATH));
+      double value;
+      //--- read data from file
+      while(!FileIsEnding(file_handle))
+        {
+         //--- read the first value in the string
+         value=FileReadNumber(file_handle);
+         //--- read to different arrays according to the function result
+         if(value>=70)
+            ReadData(file_handle,ovb_time,ovb_size,ovb_def_size);
+         else
+            ReadData(file_handle,ovs_time,ovs_size,ovs_def_size);
+        }
+      //--- close the file
+      FileClose(file_handle);
+      PrintFormat("Data is written, %s file is closed",InpFileName);
+     }
+   else
+     {
+      PrintFormat("Failed to open %s file, Error code = %d",InpFileName,GetLastError()
+      return(INIT_FAILED);
+     }
+//--- binding the arrays
+   SetIndexBuffer(0,open_buff,INDICATOR_DATA);
+   SetIndexBuffer(1,high_buff,INDICATOR_DATA);
+   SetIndexBuffer(2,low_buff,INDICATOR_DATA);
+   SetIndexBuffer(3,close_buff,INDICATOR_DATA);
+   SetIndexBuffer(4,color_buff,INDICATOR_COLOR_INDEX);
+
+
+--- Page 2480 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2480
+//---- set the indicator values that will not be visible on the chart
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Read the file's string data                                      |
+//+------------------------------------------------------------------+
+void ReadData(const int file_handle,datetime &arr[],int &size,int &def_size)
+  {
+   bool flag=false;
+//--- read till the end of the string or of the file is reached
+   while(!FileIsLineEnding(file_handle) && !FileIsEnding(file_handle))
+     {
+      //--- shift the position by reading the number
+      if(flag)
+         FileReadNumber(file_handle);
+      //--- store the current date
+      arr[size]=FileReadDatetime(file_handle);
+      size++;
+      //--- increase the array size if necessary
+      if(size==def_size)
+        {
+         def_size+=100;
+         ArrayResize(arr,def_size);
+        }
+      //--- slip past the first iteration
+      flag=true;
+     }
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   ArraySetAsSeries(time,false);
+   ArraySetAsSeries(open,false);
+   ArraySetAsSeries(high,false);
+   ArraySetAsSeries(low,false);
+   ArraySetAsSeries(close,false);
+
+
+--- Page 2481 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2481
+//--- the loop for the bars that have not been handled yet
+   for(int i=prev_calculated;i<rates_total;i++)
+     {
+      //--- 0 by default
+      open_buff[i]=0;
+      high_buff[i]=0;
+      low_buff[i]=0;
+      close_buff[i]=0;
+      color_buff[i]=0;
+      //--- check if any data is still present
+      if(ovb_ind<ovb_size)
+         for(int j=ovb_ind;j<ovb_size;j++)
+           {
+            //--- if the dates coincide, the bar is in the overbought area
+            if(time[i]==ovb_time[j])
+              {
+               open_buff[i]=open[i];
+               high_buff[i]=high[i];
+               low_buff[i]=low[i];
+               close_buff[i]=close[i];
+               //--- 0 - red color
+               color_buff[i]=0;
+               //--- increase the counter
+               ovb_ind=j+1;
+               break;
+              }
+           }
+      //--- check if any data still exists
+      if(ovs_ind<ovs_size)
+         for(int j=ovs_ind;j<ovs_size;j++)
+           {
+            //--- if the dates coincide, the bar is in the oversold area
+            if(time[i]==ovs_time[j])
+              {
+               open_buff[i]=open[i];
+               high_buff[i]=high[i];
+               low_buff[i]=low[i];
+               close_buff[i]=close[i];
+               //--- 1 - blue color
+               color_buff[i]=1;
+               //--- increase the counter
+               ovs_ind=j+1;
+               break;
+              }
+           }
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+
+
+--- Page 2482 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2482
+//+------------------------------------------------------------------+
+//| ChartEvent event handler                                         |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id,
+                  const long &lparam,
+                  const double &dparam,
+                  const string &sparam
+                  )
+  {
+//--- change the indicator width according to the scale
+   if(ChartGetInteger(0,CHART_SCALE)>3)
+      PlotIndexSetInteger(0,PLOT_LINE_WIDTH,2);
+   else
+      PlotIndexSetInteger(0,PLOT_LINE_WIDTH,1);
+  }
+See also
+FileWriteString
+
+
+--- Page 2483 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2483
+FileReadArray
+Reads from a file of BIN type arrays of any type except string (may be an array of structures, not
+containing strings, and dynamic arrays).
+uint  FileReadArray(
+   int    file_handle,               // File handle
+   void&  array[],                   // Array to record
+   int    start=0,                   // start array position to write
+   int    count=WHOLE_ARRAY          // count to read
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+array[]
+[out] An array where the data will be loaded.
+start=0
+[in]  Start position to read from the array.
+count=WHOLE_ARRAY
+[in]  Number of elements to read. By default, reads the entire array (count=WHOLE_ARRAY).
+Return Value
+Number of elements read.
+Note
+String array can be read only from the file of TXT type. If necessary, the function tries to increase
+the size of the array.
+Example (the file obtained after execution of the example for FileWriteArray function is used here)
+//--- display the window of input parameters when launching the script
+#property script_show_inputs
+//--- input parameters
+input string InpFileName="data.bin";
+input string InpDirectoryName="SomeFolder";
+//+------------------------------------------------------------------+
+//| Structure for storing price data                                 |
+//+------------------------------------------------------------------+
+struct prices
+  {
+   datetime          date; // date
+   double            bid;  // bid price
+   double            ask;  // ask price
+  };
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+
+
+--- Page 2484 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2484
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+//--- structure array
+   prices arr[];
+//--- file path
+   string path=InpDirectoryName+"//"+InpFileName;
+//--- open the file
+   ResetLastError();
+   int file_handle=FileOpen(path,FILE_READ|FILE_BIN);
+   if(file_handle!=INVALID_HANDLE)
+     {
+      //--- read all data from the file to the array
+      FileReadArray(file_handle,arr);
+      //--- receive the array size
+      int size=ArraySize(arr);
+      //--- print data from the array
+      for(int i=0;i<size;i++)
+         Print("Date = ",arr[i].date," Bid = ",arr[i].bid," Ask = ",arr[i].ask);
+      Print("Total data = ",size);
+      //--- close the file
+      FileClose(file_handle);
+     }
+   else
+      Print("File open failed, error ",GetLastError());
+  }
+See also
+Variables, FileWriteArray
+
+
+--- Page 2485 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2485
+FileReadBool
+Reads from the file of CSV type string from the current position to a delimiter (or till the end of the
+text line) and converts the read string to a bool type value.
+bool  FileReadBool(
+   int  file_handle    // File handle
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+Return Value
+Line read may be set to "true", "false" or the symbolic representation of integers "0" or "1". A
+nonzero value is converted to a logical true. The function returns the converted value.
+Example (the file obtained after executing the example for FileWrite function is used here)
+//+------------------------------------------------------------------+
+//|                                            Demo_FileReadBool.mq5 |
+//|                        Copyright 2013, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2013, MetaQuotes Software Corp."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property indicator_chart_window
+#property indicator_buffers 2
+#property indicator_plots   2
+//---- plot Label1
+#property indicator_label1  "UpSignal"
+#property indicator_type1   DRAW_ARROW
+#property indicator_color1  clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  4
+//---- plot Label2
+#property indicator_label2  "DownSignal"
+#property indicator_type2   DRAW_ARROW
+#property indicator_color2  clrRed
+#property indicator_style2  STYLE_SOLID
+#property indicator_width2  4
+//--- parameters for data reading
+input string InpFileName="MACD.csv";  // file name
+input string InpDirectoryName="Data"; // directory name
+//--- global variables
+int      ind=0;       // index
+double   upbuff[];    // indicator buffers of up arrows
+double   downbuff[];  // indicator buffer of down arrows
+
+
+--- Page 2486 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2486
+bool     sign_buff[]; // signal array (true - buy, false - sell)
+datetime time_buff[]; // array of signals' arrival time
+int      size=0;      // size of signal arrays
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- open the file
+   ResetLastError();
+   int file_handle=FileOpen(InpDirectoryName+"//"+InpFileName,FILE_READ|FILE_CSV);
+   if(file_handle!=INVALID_HANDLE)
+     {
+      PrintFormat("%s file is open for reading",InpFileName);
+      //--- first, read the number of signals
+      size=(int)FileReadNumber(file_handle);
+      //--- allocate memory for the arrays
+      ArrayResize(sign_buff,size);
+      ArrayResize(time_buff,size);
+      //--- read data from the file
+      for(int i=0;i<size;i++)
+        {
+         //--- signal time
+         time_buff[i]=FileReadDatetime(file_handle);
+         //--- signal value
+         sign_buff[i]=FileReadBool(file_handle);
+        }
+      //--- close the file
+      FileClose(file_handle);
+     }
+   else
+     {
+      PrintFormat("Failed to open %s file, Error code = %d",InpFileName,GetLastError()
+      return(INIT_FAILED);
+     }
+//--- binding the arrays
+   SetIndexBuffer(0,upbuff,INDICATOR_DATA);
+   SetIndexBuffer(1,downbuff,INDICATOR_DATA);
+//--- set the symbol code for drawing in PLOT_ARROW
+   PlotIndexSetInteger(0,PLOT_ARROW,241);
+   PlotIndexSetInteger(1,PLOT_ARROW,242);
+//---- set the indicator values that will not be seen on the chart
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+   PlotIndexSetDouble(1,PLOT_EMPTY_VALUE,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+
+
+--- Page 2487 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2487
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   ArraySetAsSeries(time,false);
+   ArraySetAsSeries(low,false);
+   ArraySetAsSeries(high,false);
+//--- the loop for the bars that have not been handled yet
+   for(int i=prev_calculated;i<rates_total;i++)
+     {
+      //--- 0 by default
+      upbuff[i]=0;
+      downbuff[i]=0;
+      //--- check if any data is still present
+      if(ind<size)
+        {
+         for(int j=ind;j<size;j++)
+           {
+            //--- if dates coincide, use the value from the file
+            if(time[i]==time_buff[j])
+              {
+               //--- draw the arrow according to the signal
+               if(sign_buff[j])
+                  upbuff[i]=high[i];
+               else
+                  downbuff[i]=low[i];
+               //--- increase the counter
+               ind=j+1;
+               break;
+              }
+           }
+        }
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+See also
+ Type bool, FileWrite
+
+
+--- Page 2488 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2488
+FileReadDatetime
+Reads from the file of CSV type a string of one of the formats: "YYYY.MM.DD HH:MI:SS",
+"YYYY.MM.DD" or "HH:MI:SS" - and converts it into a value of datetime type.
+datetime  FileReadDatetime(
+   int  file_handle    // File handle
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+Return Value
+The value of datetime type.
+Example (the file obtained after executing the example for FileWrite function is used here)
+//+------------------------------------------------------------------+
+//|                                        Demo_FileReadDateTime.mq5 |
+//|                        Copyright 2013, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2013, MetaQuotes Software Corp."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property indicator_chart_window
+#property indicator_buffers 2
+#property indicator_plots   2
+//---- plot Label1
+#property indicator_label1  "UpSignal"
+#property indicator_type1   DRAW_ARROW
+#property indicator_color1  clrRed
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  4
+//---- plot Label2
+#property indicator_label2  "DownSignal"
+#property indicator_type2   DRAW_ARROW
+#property indicator_color2  clrRed
+#property indicator_style2  STYLE_SOLID
+#property indicator_width2  4
+//--- parameters for data reading
+input string InpFileName="MACD.csv";  // file name
+input string InpDirectoryName="Data"; // directory name
+//--- global variables
+int      ind=0;       // index
+double   upbuff[];    // indicator buffers of up arrows
+double   downbuff[];  // indicator buffer of down arrows
+bool     sign_buff[]; // signal array (true - buy, false - sell)
+
+
+--- Page 2489 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2489
+datetime time_buff[]; // array of signals' arrival time
+int      size=0;      // size of signal arrays
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- open the file
+   ResetLastError();
+   int file_handle=FileOpen(InpDirectoryName+"//"+InpFileName,FILE_READ|FILE_CSV);
+   if(file_handle!=INVALID_HANDLE)
+     {
+      PrintFormat("%s file is open for reading",InpFileName);
+      //--- first, read the number of signals
+      size=(int)FileReadNumber(file_handle);
+      //--- allocate memory for the arrays
+      ArrayResize(sign_buff,size);
+      ArrayResize(time_buff,size);
+      //--- read data from the file
+      for(int i=0;i<size;i++)
+        {
+         //--- signal time
+         time_buff[i]=FileReadDatetime(file_handle);
+         //--- signal value
+         sign_buff[i]=FileReadBool(file_handle);
+        }
+      //--- close the file
+      FileClose(file_handle);
+     }
+   else
+     {
+      PrintFormat("Failed to open %s file, Error code = %d",InpFileName,GetLastError()
+      return(INIT_FAILED);
+     }
+//--- binding the arrays
+   SetIndexBuffer(0,upbuff,INDICATOR_DATA);
+   SetIndexBuffer(1,downbuff,INDICATOR_DATA);
+//--- set the symbol code for drawing in PLOT_ARROW
+   PlotIndexSetInteger(0,PLOT_ARROW,241);
+   PlotIndexSetInteger(1,PLOT_ARROW,242);
+//---- set the indicator values that will not be seen on the chart
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+   PlotIndexSetDouble(1,PLOT_EMPTY_VALUE,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+
+
+--- Page 2490 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2490
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+  {
+   ArraySetAsSeries(time,false);
+   ArraySetAsSeries(low,false);
+   ArraySetAsSeries(high,false);
+//--- the loop for the bars that have not been handled yet
+   for(int i=prev_calculated;i<rates_total;i++)
+     {
+      //--- 0 by default
+      upbuff[i]=0;
+      downbuff[i]=0;
+      //--- check if any data is still present
+      if(ind<size)
+        {
+         for(int j=ind;j<size;j++)
+           {
+            //--- if dates coincide, use the value from the file
+            if(time[i]==time_buff[j])
+              {
+               //--- draw the arrow according to the signal
+               if(sign_buff[j])
+                  upbuff[i]=high[i];
+               else
+                  downbuff[i]=low[i];
+               //--- increase the counter
+               ind=j+1;
+               break;
+              }
+           }
+        }
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+See also
+Type datetime, StringToTime, TimeToString, FileWrite
+
+
+--- Page 2491 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2491
+FileReadDouble
+Reads a double-precision floating point number (double) from the current position of the binary file.
+double  FileReadDouble(
+   int  file_handle    // File handle
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+Return Value
+The value of double type.
+Note
+For more details about the error, call GetLastError().
+Example (the file obtained after executing the example for FileWriteDouble function is used here)
+//+------------------------------------------------------------------+
+//|                                          Demo_FileReadDouble.mq5 |
+//|                        Copyright 2013, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2013, MetaQuotes Software Corp."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property indicator_chart_window
+#property indicator_buffers 1
+#property indicator_plots   1
+//---- plot Label1
+#property indicator_label1  "MA"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrGreen
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  2
+#property indicator_separate_window
+//--- data reading parameters
+input string InpFileName="MA.csv";    // file name
+input string InpDirectoryName="Data"; // directory name
+//--- global variables
+int      ind=0;
+int      size=0;
+double   ma_buff[];
+datetime time_buff[];
+//--- indicator buffer
+double   buff[];
+//+------------------------------------------------------------------+
+
+
+--- Page 2492 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2492
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//--- open the file
+   ResetLastError();
+   int file_handle=FileOpen(InpDirectoryName+"//"+InpFileName,FILE_READ|FILE_BIN);
+   if(file_handle!=INVALID_HANDLE)
+     {
+      PrintFormat("%s file is available for reading",InpFileName);
+      PrintFormat("File path: %s\\Files\\",TerminalInfoString(TERMINAL_DATA_PATH));
+      //--- first, read the amount of data in the file
+      size=(int)FileReadDouble(file_handle);
+      //--- allocate memory for the arrays
+      ArrayResize(ma_buff,size);
+      ArrayResize(time_buff,size);
+      //--- read data from the file
+      for(int i=0;i<size;i++)
+        {
+         time_buff[i]=(datetime)FileReadDouble(file_handle);
+         ma_buff[i]=FileReadDouble(file_handle);
+        }
+      //--- close the file
+      FileClose(file_handle);
+      PrintFormat("Data is written, %s file is closed",InpFileName);
+     }
+   else
+     {
+      PrintFormat("Failed to open %s file, Error code = %d",InpFileName,GetLastError()
+      return(INIT_FAILED);
+     }
+//--- bind the array to the indicator buffer with index 0
+   SetIndexBuffer(0,buff,INDICATOR_DATA);
+//---- set the indicator values that will not be visible on the chart
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+
+
+--- Page 2493 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2493
+                const long &volume[],
+                const int &spread[])
+  {
+   ArraySetAsSeries(time,false);
+//--- the loop for the bars that have not been handled yet
+   for(int i=prev_calculated;i<rates_total;i++)
+     {
+      //--- 0 by default
+      buff[i]=0;
+      //--- check if any data still exists
+      if(ind<size)
+        {
+         for(int j=ind;j<size;j++)
+           {
+            //--- if the dates coincide, the value from the file is used
+            if(time[i]==time_buff[j])
+              {
+               buff[i]=ma_buff[j];
+               //--- increase the counter
+               ind=j+1;
+               break;
+              }
+           }
+        }
+     }
+//--- return value of prev_calculated for next call
+   return(rates_total);
+  }
+See also
+Real types (double, float), StringToDouble, DoubleToString, FileWriteDouble
+
+
+--- Page 2494 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2494
+FileReadFloat
+Reads the single-precision floating point number (float) from the current position of the binary file.
+float  FileReadFloat(
+   int  file_handle    // File handle
+   );
+Parameters
+file_handle
+[in]  File descriptor returned by FileOpen().
+Return Value
+The value of float type.
+Note
+For more details about the error, call GetLastError().
+Example (the file obtained after executing the example for FileWriteFloat function is used here)
+//+------------------------------------------------------------------+
+//|                                           Demo_FileReadFloat.mq5 |
+//|                        Copyright 2013, MetaQuotes Software Corp. |
+//|                                              https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2013, MetaQuotes Software Corp."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property indicator_separate_window
+#property indicator_buffers 2
+#property indicator_plots   1
+//---- plot Label1
+#property indicator_label1  "CloseLine"
+#property indicator_type1   DRAW_COLOR_LINE
+#property indicator_color1  clrRed,clrBlue
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  2
+//--- parameters for data reading
+input string InpFileName="Close.bin"; // file name
+input string InpDirectoryName="Data"; // directory name
+//--- global variables
+int      ind=0;
+int      size=0;
+double   close_buff[];
+datetime time_buff[];
+//--- indicator buffers
+double   buff[];
+double   color_buff[];
+//+------------------------------------------------------------------+
+
+
+--- Page 2495 ---
+File Functions
+© 2000-2025, MetaQuotes Ltd.
+2495
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+   int def_size=100;
+//--- allocate memory for the arrays
+   ArrayResize(close_buff,def_size);
+   ArrayResize(time_buff,def_size);
+//--- open the file
+   ResetLastError();
+   int file_handle=FileOpen(InpDirectoryName+"//"+InpFileName,FILE_READ|FILE_BIN);
+   if(file_handle!=INVALID_HANDLE)
+     {
+      PrintFormat("%s file is available for reading",InpFileName);
+      PrintFormat("File path: %s\\Files\\",TerminalInfoString(TERMINAL_DATA_PATH));
+      //--- read data from the file
+      while(!FileIsEnding(file_handle))
+        {
+         //--- read time and price values
+         time_buff[size]=(datetime)FileReadDouble(file_handle);
+         close_buff[size]=(double)FileReadFloat(file_handle);
+         size++;
+         //--- increase the array sizes if they are overflown
+         if(size==def_size)
+           {
+            def_size+=100;
+            ArrayResize(close_buff,def_size);
+            ArrayResize(time_buff,def_size);
+           }
+        }
+      //--- close the file
+      FileClose(file_handle);
+      PrintFormat("Data is read, %s file is closed",InpFileName);
+     }
+   else
+     {
+      PrintFormat("Failed to open %s file, Error code = %d",InpFileName,GetLastError()
+      return(INIT_FAILED);
+     }
+//--- bind the arrays to the indicator buffers
+   SetIndexBuffer(0,buff,INDICATOR_DATA);
+   SetIndexBuffer(1,color_buff,INDICATOR_COLOR_INDEX);
+//---- set the indicator values that will not be visible on the chart
+   PlotIndexSetDouble(0,PLOT_EMPTY_VALUE,0);
+//---
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |

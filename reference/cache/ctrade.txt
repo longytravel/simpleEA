@@ -1,0 +1,947 @@
+=== CTrade (Pages 5851-5923) ===
+
+--- Page 5851 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5851
+CTrade
+CTrade is a class for easy access to the trade functions.
+Description
+CTrade class provides easy access to the trade functions.
+Declaration
+   class CTrade : public CObject
+Title
+   #include <Trade\Trade.mqh>
+Inheritance hierarchy
+   CObject
+       CTrade
+Direct descendants
+CExpertTrade
+Class methods by groups
+Setting parameters
+LogLevel
+Sets logging level
+SetExpertMagicNumber
+Sets the expert ID
+SetDeviationInPoints
+Sets the allowed deviation
+SetTypeFilling
+Sets filling type of the order
+SetTypeFillingBySymbol
+Sets filling type of the order according to the specified symbol
+settings
+SetAsyncMode
+Sets asynchronous mode for trade operations
+SetMarginMode
+Sets margin calculation mode in accordance with the current
+account settings
+Operations with orders
+OrderOpen
+Places a pending order with specified parameters
+OrderModify
+Modifies the pending order parameters
+OrderDelete
+Deletes a pending order
+Operations with positions
+PositionOpen
+Opens a position with specified parameters
+
+
+--- Page 5852 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5852
+Setting parameters
+PositionModify
+Modifies position parameters by the specified symbol or position
+ticket
+PositionClose
+Closes a position for the specified symbol
+PositionClosePartial
+Partially closes a position on a specified symbol or having a
+specified ticket
+PositionCloseBy
+Closes a position with the specified ticket by an opposite position
+Additional methods
+Buy
+Opens a long position with specified parameters
+Sell
+Opens a short position with specified parameters
+BuyLimit
+Places a pending order of the Buy Limit type with specified
+parameters
+BuyStop
+Places a pending order of the Buy Stop type with specified
+parameters
+SellLimit
+Places a pending order of the Sell Limit type with specified
+parameters
+SellStop
+Places a pending order of the Sell Stop type with specified
+parameters
+Access to the last request
+parameters
+Request
+Gets the copy of the last request structure
+RequestAction
+Gets the trade operation type
+RequestActionDescription
+Gets the trade operation type as string
+RequestMagic
+Gets the magic number of the Expert Advisor
+RequestOrder
+Gets the order ticket used in the last request
+RequestSymbol
+Gets the name of the symbol used in the last request
+RequestVolume
+Gets the trade volume (in lots) used in the last request
+RequestPrice
+Gets the price used in the last request
+RequestStopLimit
+Gets the price of  pending order of Stop Limit type used in the
+last request
+RequestSL
+Gets the Stop Loss price of the order used in the last request
+RequestTP
+Gets the Take Profit price of the order used in the last request
+RequestDeviation
+Gets the maximum allowable price deviation of the order used in
+the last request
+RequestType
+Gets the type of the order used in the last request
+
+
+--- Page 5853 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5853
+Setting parameters
+RequestTypeDescription
+Gets the type of the order (as string) used in the last request
+RequestTypeFilling
+Gets the filling type of the order used in the last request
+RequestTypeFillingDescription
+Gets the filling type of the order (as string) used in the last
+request
+RequestTypeTime
+Gets the validity period of the order used in the last request
+RequestTypeTimeDescription
+Gets the validity period of the order (as string) used in the last
+request
+RequestExpiration
+Gets the expiration time of the order used in the last request
+RequestComment
+Gets the comment of the order used in the last request
+RequestPosition
+Gets position ticket
+RequestPositionBy
+Gets opposite position ticket
+Access to the last request
+checking results
+CheckResult
+Gets the copy of the structure of the last request check result.
+CheckResultRetcode
+Gets the value of the retcode field of MqlTradeCheckResult type,
+filled while checking the request correctness
+CheckResultRetcodeDescripti
+on
+Gets 
+the 
+string 
+description 
+of 
+the 
+retcode 
+field 
+of
+MqlTradeCheckResult type, filled while checking the request
+correctness
+CheckResultBalance
+Gets the value of the balance field of MqlTradeCheckResult type,
+filled while checking the request correctness
+CheckResultEquity
+Gets the value of the equity field of MqlTradeCheckResult type,
+filled while checking the request correctness
+CheckResultProfit
+Gets the value of the floating profit after executing a trading
+operation.
+CheckResultMargin
+Gets the value of the margin field of MqlTradeCheckResult type,
+filled while checking the request correctness
+CheckResultMarginFree
+Gets the value of the margin_free field of MqlTradeCheckResult
+type, filled while checking the request correctness
+CheckResultMarginLevel
+Gets the value of the margin_level field of MqlTradeCheckResult
+type, filled while checking the request correctness
+CheckResultComment
+Gets the value of the comment field of MqlTradeCheckResult
+type, filled while checking the request correctness
+Access to the last request
+execution results
+Result
+Gets the copy of the structure of the last request result
+
+
+--- Page 5854 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5854
+Setting parameters
+ResultRetcode
+Gets the code of request result
+ResultRetcodeDescription
+Gets the code of request result as a string
+ResultDeal
+Gets the deal ticket
+ResultOrder
+Gets the order ticket
+ResultVolume
+Gets the volume of deal or order
+ResultPrice
+Gets the price, confirmed by broker
+ResultBid
+Gets the current bid price (the requote)
+ResultAsk
+Gets the current ask price (the requote)
+ResultComment
+Gets the broker comment
+Auxiliary methods
+PrintRequest
+Prints the last request parameters into journal
+PrintResult
+Prints the results of the last request into journal
+FormatRequest
+Prepares the formatted string with last request parameters
+FormatRequestResult
+Prepares the formatted string with results of the last request
+execution
+Methods inherited from class CObject
+Prev, Prev, Next, Next, Save, Load, Type, Compare
+
+
+--- Page 5855 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5855
+LogLevel
+Sets logging level for messages.
+void  LogLevel(
+   ENUM_LOG_LEVELS  log_level      // level
+   )
+Parameters
+log_level
+[in]  New logging level.
+Return Value
+None.
+Note
+LOG_LEVEL_NO and less disables displaying any messages (set up automatically in the optimization
+mode). LOG_LEVEL_ERRORS enables displaying only error messages (value by default).
+LOG_LEVEL_ALL and greater enables displaying any messages (set up automatically in the test
+mode).
+ENUM_LOG_LEVELS
+Identifier
+Description
+Value
+LOG_LEVEL_NO
+Displaying messages disabled
+0
+LOG_LEVEL_ERRORS
+Only 
+error 
+messages 
+are
+displayed
+1
+LOG_LEVEL_ALL
+All messages are displayed
+2
+
+
+--- Page 5856 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5856
+SetExpertMagicNumber
+Sets the expert ID.
+void  SetExpertMagicNumber(
+   ulong  magic      // ID
+   )
+Parameters
+magic
+[in]  New ID of the expert.
+Return Value
+None.
+
+
+--- Page 5857 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5857
+SetDeviationInPoints
+Sets the allowed deviation.
+void  SetDeviationInPoints(
+   ulong  deviation      // deviation
+   )
+Parameters
+deviation
+[in]  Allowed deviation in points.
+Return Value
+None.
+
+
+--- Page 5858 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5858
+SetTypeFilling
+Sets filling type of the order.
+void  SetTypeFilling(
+   ENUM_ORDER_TYPE_FILLING  filling      // order filling type
+   )
+Parameters
+filling
+[in]  Order filling type from ENUM_ORDER_TYPE_FILLING enumeration.
+Return Value
+None.
+
+
+--- Page 5859 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5859
+SetTypeFillingBySymbol
+Sets filling type of the order according to the specified symbol settings.
+bool  SetTypeFillingBySymbol(
+   const string   symbol      // symbol name
+   )
+Parameters
+symbol
+[in]  Name of the symbol, in which SYMBOL_FILLING_MODE contains allowed order filling policies.
+Return Value
+true – successful execution, false – failed to define the filling policy.
+Note
+If SYMBOL_FILLING_FOK and SYMBOL_FILLING_IOC filling policies are allowed for a symbol
+simultaneously, the ORDER_FILLING_FOK value is set for the order.
+
+
+--- Page 5860 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5860
+SetAsyncMode
+Sets asynchronous mode for trade operations.
+void  SetAsyncMode(
+   bool  mode      // asynchronous mode flag
+   )
+Parameters
+mode
+[in]  Asynchronous mode flag.
+Return Value
+None.
+Note
+This mode is used for asynchronous (without waiting for the trade server's response to a sent
+request) trade operations (see OrderSendAsync).
+
+
+--- Page 5861 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5861
+SetMarginMode
+Sets margin calculation mode in accordance with the current account settings.
+void  SetMarginMode()
+Return Value
+No.
+Note
+The margin calculation mode is specified in ENUM_ACCOUNT_MARGIN_MODE.
+
+
+--- Page 5862 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5862
+OrderOpen
+Places the pending order with set parameters.
+bool  OrderOpen(
+   const string          symbol,          // symbol
+   ENUM_ORDER_TYPE       order_type,      // order type
+   double                volume,          // order volume
+   double                limit_price,     // StopLimit price
+   double                price,           // execution price
+   double                sl,              // Stop Loss price
+   double                tp,              // Take Profit price
+   ENUM_ORDER_TYPE_TIME  type_time,       // type by expiration
+   datetime              expiration,      // expiration
+   const string          comment=""       // comment
+   )
+Parameters
+symbol
+[in] Name of trade instrument.
+order_type
+[in]  Type of order trade operation from ENUM_ORDER_TYPE enumeration.
+volume
+[in] Requested order volume.
+limit_price
+[in] Price at which the StopLimit order will be placed.
+price
+[in] Price at which the order must be executed.
+sl
+[in] Price at which the Stop Loss will trigger.
+tp
+[in] Price at which the Take Profit will trigger.
+type_time
+[in]  Order type by execution from ENUM_ORDER_TYPE_TIME enumeration.
+expiration
+[in] Expiration date of pending order.
+comment=""
+[in]  Order comment.
+Return Value
+true - successful check of the basic structures, otherwise - false.
+
+
+--- Page 5863 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5863
+Note
+Successful completion of the OrderSend(...) method does not always mean successful execution of
+the trade operation. It is necessary to check the result of a trade request (trade server return code)
+using ResultRetcode() and value returned by ResultOrder().
+
+
+--- Page 5864 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5864
+OrderModify
+Modifies the pending order parameters.
+bool  OrderModify(
+   ulong                 ticket,         // order ticket
+   double                price,          // execution price
+   double                sl,             // Stop Loss price
+   double                tp,             // Take Profit price
+   ENUM_ORDER_TYPE_TIME  type_time,      // type by expiration
+   datetime              expiration,     // expiration
+   double                stoplimit       // Limit order price 
+   )
+Parameters
+ticket
+[in]  Order ticket.
+price
+[in] The new price by which the order must be executed (or the previous value, if the change is not
+necessary).
+sl
+[in] The new price by which the Stop Loss will trigger (or the previous value, if the change is not
+necessary).
+tp
+[in] The new price by which the Take Profit will trigger (or the previous value, if the change is not
+necessary).
+type_time
+[in] The new type of order by expiration from ENUM_ORDER_TYPE_TIME enumeration (or the
+previous value, if the change is not necessary).
+expiration
+[in] The new expiration date of pending order (or the previous value, if the change is not
+necessary).
+stoplimit
+[in]  New price used for setting a Limit order when the price reaches price value. It is specified
+only for StopLimit orders.
+Return Value
+true - successful check of the basic structures, otherwise - false.
+Note
+Successful completion of the OrderModify(...) method does not always mean successful execution of
+the trade operation. It is necessary to check the result of trade request (trade server return code)
+using ResultRetcode().
+
+
+--- Page 5865 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5865
+OrderDelete
+Deletes the pending order.
+bool  OrderDelete(
+   ulong  ticket      // order ticket
+   )
+Parameters
+ticket
+[in]  Order ticket.
+Return Value
+true - successful check of the basic structures, otherwise - false.
+Note
+Successful completion of the OrderDelete(...) method does not always mean successful execution of
+the trade operation. It is necessary to check the result of trade request (trade server return code)
+using ResultRetcode().
+
+
+--- Page 5866 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5866
+PositionOpen
+Opens a position with the specified parameters.
+bool  PositionOpen(
+   const string     symbol,         // symbol
+   ENUM_ORDER_TYPE  order_type,     // order type to open position
+   double           volume,         // position volume
+   double           price,          // execution price
+   double           sl,             // Stop Loss price
+   double           tp,             // Take Profit price
+   const string     comment=""      // comment
+   )
+Parameters
+symbol
+[in]  Name of trade instrument, by which it is intended to open position.
+order_type
+[in]  Order type (trade operation) to open position from ENUM_ORDER_TYPE enumeration.
+volume
+[in] Requested position volume.
+price
+[in] Price at which the position must be opened.
+sl
+[in] Price at which the Stop Loss will trigger.
+tp
+[in] Price at which the Take Profit will trigger.
+comment=""
+[in]  Position comment.
+Return Value
+true - successful check of the basic structures, otherwise - false.
+Note
+Successful completion of the PositionOpen(...) method does not always mean successful execution of
+the trade operation. It is necessary to check the result of trade request (trade server return code)
+using ResultRetcode() and value returned by ResultDeal().
+
+
+--- Page 5867 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5867
+PositionModify
+Modifies the position parameters by specified symbol.
+bool  PositionModify(
+   const string  symbol,     // symbol
+   double        sl,         // Stop Loss price
+   double        tp          // Take Profit price
+   )
+Modifies position parameters by the specified ticket.
+bool  PositionModify(
+   const ulong   ticket,     // position ticket
+   double        sl,         // Stop Loss price 
+   double        tp          // Take Profit price
+   )
+Parameters
+symbol
+[in]  Name of trade instrument, by which it is intended to modify position.
+ticket
+[in]  Ticket of the position to be modified.
+sl
+[in] The new price by which the Stop Loss will trigger (or the previous value, if the change is not
+necessary).
+tp
+[in] The new price by which the Take Profit will trigger (or the previous value, if the change is not
+necessary).
+Return Value
+true - successful check of the basic structures, otherwise - false.
+Note
+Successful completion of the PositionModify(...) method does not always mean successful execution
+of the trade operation. It is necessary to check the result of trade request (trade server return code)
+using ResultRetcode().
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. In this case, PositionModify will modify the position with the lowest
+ticket.
+
+
+--- Page 5868 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5868
+PositionClose
+Closes a position by the specified symbol.
+bool  PositionClose(
+   const string  symbol,                  // symbol
+   ulong         deviation=ULONG_MAX      // deviation
+   )
+Closes a position with the specified ticket.
+bool  PositionClose(
+   const ulong   ticket,                  // position ticket
+   ulong         deviation=ULONG_MAX      // deviation
+   )
+Parameters
+symbol
+[in]  Name of trade instrument, by which it is intended to close position.
+ticket
+[in]  Ticket of a closed position.
+deviation=ULONG_MAX
+[in] Maximal deviation from the current price (in points).
+Return Value
+true - successful check of the basic structures, otherwise - false.
+Note
+Successful completion of the PositionClose(...) method does not always mean successful execution
+of the trade operation. It is necessary to check the result of trade request (trade server return code)
+using ResultRetcode().
+For the "netting" interpretation of positions (ACCOUNT_MARGIN_MODE_RETAIL_NETTING and
+ACCOUNT_MARGIN_MODE_EXCHANGE), only one position can exist for a symbol at any moment of
+time. This position is a result of one or more deals. Do not confuse positions with valid pending
+orders, which are also displayed on the Trading tab of the Toolbox window.
+If individual positions are allowed (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple positions
+can be open for one symbol. In this case, PositionClose will close a position with the lowest ticket.
+
+
+--- Page 5869 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5869
+PositionClosePartial
+Partially closes a position on a specified symbol in case of a "hedging" accounting.
+bool  PositionClosePartial(
+   const string  symbol,                  // symbol
+   const double  volume,                  // volume
+   ulong         deviation=ULONG_MAX      // deviation
+   )
+Partially closes a position having a specified ticket in case of a "hedging" accounting.
+bool  PositionClosePartial(
+   const ulong   ticket,                  // position ticket
+   const double  volume,                  // volume
+   ulong         deviation=ULONG_MAX      // deviation
+   )
+Parameters
+symbol
+[in]  Name of a trading instrument, on which a position is closed partially. If a symbol (not a
+ticket) is specified for a position partial closing, the first detected position having a specified
+MagicNumber (Expert Advisor ID) on the symbol is selected. Therefore, it is sometimes better to
+use PositionClosePartial() with a specified position ticket.
+volume
+[in]  Volume, by which a position should be decreased. If the value exceeds the volume of a
+partially closed position, it is closed in full. No position in the opposite direction is opened.
+ticket
+[in]  Closed position ticket.
+deviation=ULONG_MAX
+[in]  The maximum deviation from the current price (in points).
+Return Value
+true if the basic check of structures is successful, otherwise false.
+Note
+A successful completion of the PositionClosePartial(...) method does not always mean a successful
+execution of a trading operation. You should call the ResultRetcode() method to check the result of a
+trade request (trade server return code).
+In 
+the 
+"netting" 
+system 
+(ACCOUNT_MARGIN_MODE_RETAIL_NETTING 
+and
+ACCOUNT_MARGIN_MODE_EXCHANGE), for each symbol, at any given moment of time, only one
+position can be open, which is the result of one or more deals. Do not confuse the current pending
+orders with positions that are also displayed on the "Trade" tab of the client terminal's "Toolbox"
+panel.
+
+
+--- Page 5870 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5870
+In case of the position representation (ACCOUNT_MARGIN_MODE_RETAIL_HEDGING), multiple
+positions can be opened on each symbol simultaneously. In this case, PositionClose closes a position
+having a least ticket.
+
+
+--- Page 5871 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5871
+PositionCloseBy
+Closes a position with the specified ticket by an opposite position.
+bool  PositionCloseBy(
+   const ulong   ticket,        // position ticket
+   const ulong   ticket_by      // opposite position ticket
+   )
+Parameters
+ticket
+[in]  Ticket of the closed position.
+ticket_by
+[in]  Ticket of the opposite position used for closing.
+Returned value
+true - the basic check of structures is successful, otherwise - false.
+Note
+A successful completion of the PositionCloseBy(...) method does not always mean a successful
+execution of a trading operation. You should call the ResultRetcode() method to check the result of a
+trade request (trade server return code).
+
+
+--- Page 5872 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5872
+Buy
+Opens a long position with specified parameters.
+bool  Buy(
+   double        volume,          // position volume
+   const string  symbol=NULL,     // symbol
+   double        price=0.0,       // execution price
+   double        sl=0.0,          // stop loss price
+   double        tp=0.0,          // take profit price
+   const string  comment=""       // comment
+   )
+Parameters
+volume
+[in]  Requested position volume.
+symbol=NULL
+[in]  Position symbol. If it is not specified, the current symbol will be used.
+price=0.0
+[in]  Price. If the price is not specified, the current market Ask price will be used.
+sl=0.0
+[in]  Stop Loss price.
+tp=0.0
+[in]  Take Profit price.
+comment=""
+[in]  Comment.
+Return Value
+true - successful check of the structures, otherwise - false.
+Note
+Successful completion of the Buy(...) method does not always mean successful execution of the
+trade operation. It is necessary to check the result of trade request (trade server return code) using
+ResultRetcode() and value returned by ResultDeal().
+
+
+--- Page 5873 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5873
+Sell
+Opens a short position with specified parameters.
+bool  Sell(
+   double        volume,          // position volume
+   const string  symbol=NULL,     // symbol
+   double        price=0.0,       // execution price
+   double        sl=0.0,          // stop loss price
+   double        tp=0.0,          // take profit price
+   const string  comment=""       // comment
+   )
+Parameters
+volume
+[in]  Requested position volume.
+symbol=NULL
+[in]  Position symbol. If the symbol is not specified, the current symbol will be used.
+price=0.0
+[in]  Price. If the price is not specified, the current market Bid price will be used.
+sl=0.0
+[in]  Stop Loss price.
+tp=0.0
+[in]  Take Profit price.
+comment=""
+[in]  Comment.
+Return Value
+true - successful check of the structures, otherwise - false.
+Note
+Successful completion of the Sell(...) method does not always mean successful execution of the
+trade operation. It is necessary to check the result of trade request (trade server return code) using
+ResultRetcode() and value returned by ResultDeal().
+
+
+--- Page 5874 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5874
+BuyLimit
+Places the pending order of Buy Limit type (buy at the price lower than current market price) with
+specified parameters.
+bool  BuyLimit(
+   double                volume,                       // order volume
+   double                price,                        // order price
+   const string          symbol=NULL,                  // symbol
+   double                sl=0.0,                       // stop loss price
+   double                tp=0.0,                       // take profit price
+   ENUM_ORDER_TYPE_TIME  type_time=ORDER_TIME_GTC,     // order lifetime
+   datetime              expiration=0,                 // order expiration time
+   const string          comment=""                    // comment
+   )
+Parameters
+volume
+[in]  Requested order volume.
+price
+[in]  Order price.
+symbol=NULL
+[in]  Order symbol. If the symbol is not specified, the current symbol will be used.
+sl=0.0
+[in]  Stop Loss price.
+tp=0.0
+[in]  Take Profit price.
+type_time=ORDER_TIME_GTC
+[in]  Order lifetime from ENUM_ORDER_TYPE_TIME enumeration.
+expiration=0
+[in]  Order expiration time (used only if type_time=ORDER_TIME_SPECIFIED).
+comment=""
+[in]  Order comment.
+Return Value
+true - successful check of the structures, otherwise - false.
+Note
+Successful completion of the BuyLimit(...) method does not always mean successful execution of the
+trade operation. It is necessary to check the result of trade request (trade server return code) using
+ResultRetcode() and value returned by ResultOrder().
+
+
+--- Page 5875 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5875
+BuyStop
+Places the pending order of Buy Stop type (buy at the price higher than current market price) with
+specified parameters.
+bool  BuyStop(
+   double                volume,                       // order volume
+   double                price,                        // order price
+   const string          symbol=NULL,                  // symbol
+   double                sl=0.0,                       // stop loss price
+   double                tp=0.0,                       // take profit price
+   ENUM_ORDER_TYPE_TIME  type_time=ORDER_TIME_GTC,     // order lifetime
+   datetime              expiration=0,                 // order expiration time
+   const string          comment=""                    // comment
+   )
+Parameters
+volume
+[in]  Requested order volume.
+price
+[in]  Order price.
+symbol=NULL
+[in]  Order symbol. If the symbol isn't specified, the current symbol will be used.
+sl=0.0
+[in]  Stop Loss price.
+tp=0.0
+[in]  Take Profit price.
+type_time=ORDER_TIME_GTC
+[in]  Order lifetime from ENUM_ORDER_TYPE_TIME enumeration.
+expiration=0
+[in]  Order expiration time (used only if type_time=ORDER_TIME_SPECIFIED).
+comment=""
+[in]  Order comment.
+Return Value
+true - successful check of the structures, otherwise - false.
+Note
+Successful completion of the BuyStop(...) method does not always mean successful execution of the
+trade operation. It is necessary to check the result of trade request (trade server return code) using
+ResultRetcode() and value returned by ResultOrder().
+
+
+--- Page 5876 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5876
+SellLimit
+Places the pending order of Sell Limit type (sell at the price higher than current market price) with
+specified parameters.
+bool  SellLimit(
+   double                volume,                       // order volume
+   double                price,                        // order price
+   const string          symbol=NULL,                  // symbol
+   double                sl=0.0,                       // stop loss price
+   double                tp=0.0,                       // take profit price
+   ENUM_ORDER_TYPE_TIME  type_time=ORDER_TIME_GTC,     // order lifetime
+   datetime              expiration=0,                 // order expiration time
+   const string          comment=""                    // comment
+   )
+Parameters
+volume
+[in]  Requested order volume.
+price
+[in]  Order price.
+symbol=NULL
+[in]  Order symbol. If the symbol is not specified, the current symbol will be used.
+sl=0.0
+[in]  Stop Loss price.
+tp=0.0
+[in]  Take Profit price.
+type_time=ORDER_TIME_GTC
+[in]  Order lifetime from ENUM_ORDER_TYPE_TIME enumeration.
+expiration=0
+[in]  Order expiration time (used only if type_time=ORDER_TIME_SPECIFIED).
+comment=""
+[in]  Order comment.
+Return Value
+true - successful check of the structures, otherwise - false.
+Note
+Successful completion of the SellLimit(...) method does not always mean successful execution of the
+trade operation. It is necessary to check the result of trade request (trade server return code) using
+ResultRetcode() and value returned by ResultOrder().
+
+
+--- Page 5877 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5877
+SellStop
+Places the pending order of Sell Stop type (sell at the price lower than current market price) with
+specified parameters.
+bool  SellStop(
+   double                volume,                       // order volume
+   double                price,                        // order price
+   const string          symbol=NULL,                  // symbol
+   double                sl=0.0,                       // stop loss price
+   double                tp=0.0,                       // take profit price
+   ENUM_ORDER_TYPE_TIME  type_time=ORDER_TIME_GTC,     // order lifetime
+   datetime              expiration=0,                 // order expiration time
+   const string          comment=""                    // comment
+   )
+Parameters
+volume
+[in]  Requested order volume.
+price
+[in]  Order price.
+symbol=NULL
+[in]  Order symbol. If the symbol is not specified, the current symbol will be used.
+sl=0.0
+[in]  Stop Loss price.
+tp=0.0
+[in]  Take Profit price.
+type_time=ORDER_TIME_GTC
+[in]  Order lifetime from ENUM_ORDER_TYPE_TIME enumeration.
+expiration=0
+[in]  Order expiration time (used only if type_time=ORDER_TIME_SPECIFIED).
+comment=""
+[in]  Order comment.
+Return Value
+true - successful check of the structures, otherwise - false.
+Note
+Successful completion of the SellStop(...) method does not always mean successful execution of the
+trade operation. It is necessary to check the result of trade request (trade server return code) using
+ResultRetcode() and value returned by ResultOrder().
+
+
+--- Page 5878 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5878
+Request
+Gets the copy of the last request structure.
+void  Request(
+   MqlTradeRequest&  request      // reference
+   ) const 
+Parameters
+request
+[out]  Reference to the copied structure.
+Return Value
+None.
+
+
+--- Page 5879 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5879
+RequestAction
+Gets the trade operation type.
+ENUM_TRADE_REQUEST_ACTIONS  RequestAction() const 
+Return Value
+Trade operation type used in the last request from ENUM_TRADE_REQUEST_ACTIONS enumeration.
+
+
+--- Page 5880 ---
+Standard Library
+© 2000-2025, MetaQuotes Ltd.
+5880
+RequestActionDescription
+Gets the trade operation type as string.
+string  RequestActionDescription() const 
+Return Value
+Trade operation type (as string) used in the last request.
