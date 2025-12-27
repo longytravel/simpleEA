@@ -93,13 +93,21 @@ def _recommendations(state: Dict[str, Any]) -> list[dict]:
             }
         )
 
-    # Walk-forward: recommend when the forward segment is weak or close to break-even.
-    if fwd_pf and fwd_pf < 1.1 or fwd_profit < 0:
+    # Walk-forward: recommend when forward is weak OR when results are borderline and need more confidence.
+    if (fwd_profit < 0) or (fwd_pf and fwd_pf < 1.1):
         recs.append(
             {
                 "module": "walk_forward",
                 "priority": 1,
                 "reason": f"Forward segment looks weak (FWD PF {fwd_pf:.2f}, FWD profit {fwd_profit:.2f}); multi-fold WF is the next best overfit check.",
+            }
+        )
+    elif ("CONDITIONAL" in overall.upper()) or (pf < min_pf) or (fwd_pf and fwd_pf < 1.2):
+        recs.append(
+            {
+                "module": "walk_forward",
+                "priority": 2,
+                "reason": "Run multi-fold walk-forward to reduce reliance on a single split and quantify OOS stability across regimes.",
             }
         )
 
@@ -243,4 +251,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

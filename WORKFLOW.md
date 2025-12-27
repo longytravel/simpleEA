@@ -147,6 +147,12 @@ python scripts/run_execution_stress.py --state runs/workflow_EA_Name_*.json --op
 ```
 Output: `runs/stress/{EA}_YYYYMMDD_HHMMSS/index.html`
 
+### Implemented: Walk-Forward Validation (multi-fold)
+```bash
+python scripts/run_walk_forward.py --state runs/workflow_EA_Name_*.json --open
+```
+Output: `runs/walk_forward/{EA}_YYYYMMDD_HHMMSS/index.html`
+
 ### Implemented: Multi-Pair Follow-up
 ```bash
 python scripts/run_multipair.py --state runs/workflow_EA_Name_*.json --open
@@ -175,4 +181,3 @@ Core gates:
 Monte Carlo gates:
 - Confidence: `>= 70%`
 - Ruin: `<= 5%`
-

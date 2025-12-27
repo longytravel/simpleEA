@@ -24,7 +24,7 @@ Menu status:
 ### A) Walk-Forward Validation (multi-fold)
 Purpose: reduce single-split overfitting risk by testing multiple IS/FWD folds.
 Output: fold-by-fold summary + aggregate stability metrics (median PF/ROI/DD, worst fold).
-Status: planned.
+Status: implemented via `scripts/run_walk_forward.py` (offline HTML report).
 
 ### B) Parameter Stability / Sensitivity Sweep
 Purpose: detect "knife-edge" parameter sets vs broad plateaus.
@@ -121,4 +121,3 @@ Planned approach:
 
 Cloud is already configurable in optimization INI.
 Planned: make "cloud on/off" a first-class user option in the post-step menu (e.g. overnight local runs).
-

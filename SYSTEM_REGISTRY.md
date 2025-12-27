@@ -167,6 +167,7 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 | `scripts/run_backtest.py` | Run backtest | `python scripts/run_backtest.py "EA" --symbol EURUSD` |
 | `scripts/post_step_menu.py` | Post-step menu/advisor (shows optional modules + recommendations; reads `post_steps[]` from state) | `python scripts/post_step_menu.py --state runs/workflow_EA_*.json` |
 | `scripts/run_execution_stress.py` | Optional execution stress suite (offline spread/slippage/commission sensitivity) | `python scripts/run_execution_stress.py --state runs/workflow_EA_*.json --open` |
+| `scripts/run_walk_forward.py` | Optional walk-forward validation (multi-fold IS/OOS backtests using fixed params) | `python scripts/run_walk_forward.py --state runs/workflow_EA_*.json --open` |
 | `scripts/run_multipair.py` | Optional multi-pair follow-up + offline HTML report (includes correlation/drawdown overlap, currency exposure, portfolio suggestions) | `python scripts/run_multipair.py --state runs/workflow_EA_*.json --open` |
 | `scripts/run_timeframes.py` | Optional timeframe sweep follow-up + offline HTML report | `python scripts/run_timeframes.py --state runs/workflow_EA_*.json --open` |
 | `scripts/generate_dashboard.py` | Interactive offline dashboard (sortable/filterable passes + compare page) | `python scripts/generate_dashboard.py --state runs/workflow_EA_*.json --passes 20` |
@@ -179,6 +180,7 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 |--------|---------|---------|
 | `tester/montecarlo.py` | Monte Carlo sim | `python tester/montecarlo.py "report.htm" -n 1000` |
 | `tester/multipair.py` | Multi-pair test | `python tester/multipair.py "EA" --pairs EURUSD GBPUSD` |
+| `tester/walk_forward.py` | Walk-forward (multi-fold) validation (internal; used by `scripts/run_walk_forward.py`) | Used by script |
 
 ### Reference
 | Script | Purpose | Example |

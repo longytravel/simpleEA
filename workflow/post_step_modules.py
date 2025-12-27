@@ -50,8 +50,8 @@ POST_STEP_MODULES: List[PostStepModule] = [
         id="walk_forward",
         title="Walk-Forward Validation",
         description="Multi-fold IS/FWD validation to reduce single-split overfitting risk.",
-        implemented=False,
-        command_template='(planned) python scripts/run_walk_forward.py --state "{state}" --open',
+        implemented=True,
+        command_template='python scripts/run_walk_forward.py --state "{state}" --open',
         state_key="walk_forward",
     ),
     PostStepModule(
@@ -71,4 +71,3 @@ POST_STEP_MODULES: List[PostStepModule] = [
         state_key="llm_improvement_loop",
     ),
 ]
-
