@@ -30,11 +30,16 @@ class PairResult:
     success: bool
     profit_factor: float = 0.0
     total_profit: float = 0.0
+    roi_pct: float = 0.0
     max_drawdown_pct: float = 0.0
     win_rate: float = 0.0
     total_trades: int = 0
     sharpe_ratio: float = 0.0
     recovery_factor: float = 0.0
+    history_quality: float = 0.0
+    bars: int = 0
+    ticks: int = 0
+    initial_deposit: float = 0.0
     report_path: Optional[str] = None
     error: Optional[str] = None
     duration_seconds: float = 0.0
@@ -120,7 +125,13 @@ class MultiPairTester:
             inputs: EA input parameters to use for all pairs
         """
         self.pairs = pairs or [
-            "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "EURJPY"
+            "EURUSD",
+            "GBPUSD",
+            "USDJPY",
+            "USDCHF",
+            "USDCAD",
+            "AUDUSD",
+            "NZDUSD",
         ]
         self.timeout = timeout_per_pair
         self.run_dir = run_dir
@@ -149,6 +160,7 @@ class MultiPairTester:
             MultiPairResult with all pair results
         """
         start_time = time.time()
+        ts = time.strftime("%Y%m%d_%H%M%S", time.localtime(start_time))
 
         # Reorder pairs to put primary first
         pairs_to_test = self.pairs.copy()
@@ -158,9 +170,9 @@ class MultiPairTester:
         elif primary_pair:
             pairs_to_test.insert(0, primary_pair)
 
-        # Setup run directory
-        run_dir = self.run_dir or Path("runs") / "multipair"
-        run_dir.mkdir(parents=True, exist_ok=True)
+        # Setup run directory (unique per run unless explicitly provided)
+        base_run_dir = self.run_dir or (Path("runs") / "multipair" / f"{ea_name}_{ts}")
+        base_run_dir.mkdir(parents=True, exist_ok=True)
 
         # Test each pair sequentially
         results: Dict[str, PairResult] = {}
@@ -169,6 +181,8 @@ class MultiPairTester:
         for symbol in pairs_to_test:
             print(f"Testing {ea_name} on {symbol}...")
             pair_start = time.time()
+            pair_dir = base_run_dir / symbol
+            pair_dir.mkdir(parents=True, exist_ok=True)
 
             try:
                 # Run backtest
@@ -178,7 +192,7 @@ class MultiPairTester:
                     timeframe=timeframe,
                     from_date=from_date,
                     to_date=to_date,
-                    run_dir=run_dir,
+                    run_dir=pair_dir,
                     inputs=self.inputs,
                 )
 
@@ -186,16 +200,24 @@ class MultiPairTester:
                     # Parse metrics
                     metrics = self.report_parser.parse(bt_result.report_path)
                     if metrics:
+                        roi_pct = 0.0
+                        if metrics.initial_deposit and metrics.initial_deposit > 0:
+                            roi_pct = (metrics.total_net_profit / metrics.initial_deposit) * 100.0
                         results[symbol] = PairResult(
                             symbol=symbol,
                             success=True,
                             profit_factor=metrics.profit_factor,
                             total_profit=metrics.total_net_profit,
+                            roi_pct=roi_pct,
                             max_drawdown_pct=metrics.max_drawdown_pct,
                             win_rate=metrics.win_rate,
                             total_trades=metrics.total_trades,
                             sharpe_ratio=metrics.sharpe_ratio,
                             recovery_factor=metrics.recovery_factor,
+                            history_quality=metrics.history_quality,
+                            bars=metrics.bars,
+                            ticks=metrics.ticks,
+                            initial_deposit=metrics.initial_deposit,
                             report_path=str(bt_result.report_path),
                             duration_seconds=time.time() - pair_start
                         )

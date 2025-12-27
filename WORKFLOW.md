@@ -296,7 +296,14 @@ Then open `http://localhost:8000/`.
 
 After Step 11, the system should offer optional “confidence boosters” (walk-forward, stability, stress, multi-pair, timeframe sweep, LLM improvements).
 
-See `ROADMAP.md` for the current plan (these modules are not implemented yet).
+See `ROADMAP.md` for the current plan (most modules are not implemented yet).
+
+### Optional: Multi-Pair Follow-up (Implemented)
+Run a quick “generalization check” using the best params found in the workflow, across a basket of pairs:
+```bash
+python scripts/run_multipair.py --state runs/workflow_EA_*.json --open
+```
+Output: `runs/multipair/{EA}_YYYYMMDD_HHMMSS/index.html`
 
 ---
 

@@ -38,6 +38,7 @@ After Step 11 (dashboard + report), the user should be prompted with optional br
 1) **Cross-pair generalization check (harsh, quick)**
    - Reuse the *same* parameters from EURUSD and run on other pairs.
    - Expectation: often degrades; if it holds, that’s a strong robustness signal.
+   - Status: implemented via `scripts/run_multipair.py` (offline HTML report).
 
 2) **Per-pair optimization (fair, discovery)**
    - For each pair: run full pipeline (optimize → IS/FWD → MC → dashboard).
