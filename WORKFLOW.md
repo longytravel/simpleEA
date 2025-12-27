@@ -305,6 +305,13 @@ python scripts/run_multipair.py --state runs/workflow_EA_*.json --open
 ```
 Output: `runs/multipair/{EA}_YYYYMMDD_HHMMSS/index.html`
 
+### Optional: Timeframe Sweep (Implemented)
+Run the same best params across multiple timeframes on the same symbol:
+```bash
+python scripts/run_timeframes.py --state runs/workflow_EA_*.json --open
+```
+Output: `runs/timeframes/{EA}_YYYYMMDD_HHMMSS/index.html`
+
 ---
 
 ## State File Structure

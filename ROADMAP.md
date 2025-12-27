@@ -47,6 +47,7 @@ After Step 11 (dashboard + report), the user should be prompted with optional br
 ### E) Timeframe Sweep (M15/H1/H4)
 **Purpose:** Discover where the strategy has edge and reduce regime dependence.
 **Output:** Per-timeframe leaderboard (per symbol) with comparable gates.
+Status: implemented via `scripts/run_timeframes.py` (offline HTML report).
 
 ### F) LLM Improvement Loop (Auto)
 **Purpose:** Let an LLM propose and apply strategy improvements, then re-test hands-off.

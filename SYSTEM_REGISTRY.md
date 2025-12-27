@@ -159,6 +159,7 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 |--------|---------|---------|
 | `scripts/run_backtest.py` | Run backtest | `python scripts/run_backtest.py "EA" --symbol EURUSD` |
 | `scripts/run_multipair.py` | Optional multi-pair follow-up + offline HTML report (includes correlation/drawdown overlap, currency exposure, portfolio suggestions) | `python scripts/run_multipair.py --state runs/workflow_EA_*.json --open` |
+| `scripts/run_timeframes.py` | Optional timeframe sweep follow-up + offline HTML report | `python scripts/run_timeframes.py --state runs/workflow_EA_*.json --open` |
 | `scripts/generate_dashboard.py` | Interactive offline dashboard (sortable/filterable passes + compare page) | `python scripts/generate_dashboard.py --state runs/workflow_EA_*.json --passes 20` |
 | `scripts/generate_text_report.py` | Human-readable text report (ROI + quality + costs) | `python scripts/generate_text_report.py --state runs/workflow_EA_*.json` |
 | `parser/report.py` | Parse HTML report | Used internally |
