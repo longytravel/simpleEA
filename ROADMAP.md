@@ -124,15 +124,24 @@ Planned: make "cloud on/off" a first-class user option in the post-step menu (e.
 
 ---
 
-## Local Web UI (Planned)
+## Local Web UI (Implemented)
 
 Goal: a local web app that shows the workflow steps, current progress, and post-step options.
+
+Location:
+- Server: `scripts/web_app.py`
+- UI assets: `webapp/`
+
+Usage:
+```bash
+python scripts/web_app.py --open
+```
 
 Constraints:
 - No external API calls required (runs locally/offline).
 - Uses the existing CLI scripts (subprocess) and reads/writes the existing state files in `runs/`.
 
-Approach:
-- UI reads `runs/workflow_*.json` to show step statuses and post-step runs (`post_steps[]`).
+Features:
+- Reads `runs/workflow_*.json` to show step statuses and post-step runs (`post_steps[]`).
 - Buttons trigger existing scripts (e.g. `scripts/run_walk_forward.py`) via subprocess and stream logs.
-- UI links directly to the generated offline HTML outputs (dashboards, post-step reports).
+- Links directly to generated offline HTML outputs under `runs/` (dashboards, post-step reports, backtest reports).

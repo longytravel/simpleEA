@@ -172,6 +172,7 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 | `scripts/run_timeframes.py` | Optional timeframe sweep follow-up + offline HTML report | `python scripts/run_timeframes.py --state runs/workflow_EA_*.json --open` |
 | `scripts/generate_dashboard.py` | Interactive offline dashboard (sortable/filterable passes + compare page) | `python scripts/generate_dashboard.py --state runs/workflow_EA_*.json --passes 20` |
 | `scripts/generate_text_report.py` | Human-readable text report (ROI + quality + costs) | `python scripts/generate_text_report.py --state runs/workflow_EA_*.json` |
+| `scripts/web_app.py` | Local web UI (offline) to browse workflow runs + launch post-step modules | `python scripts/web_app.py --open` |
 | `parser/report.py` | Parse HTML report | Used internally |
 | `parser/trade_extractor.py` | Extract trades | Used by Monte Carlo |
 
@@ -271,6 +272,7 @@ C:\Users\User\Projects\simpleEA\
 -- runs\timeframes\          # Offline timeframe sweep reports (index.html)
 -- runs\stress\              # Offline execution stress reports (index.html)
 -- reference\cache\        # Pre-cached MQL5 documentation (48 files)
+-- webapp\                 # Local web UI static assets (served by scripts/web_app.py)
 ```
 
 ---

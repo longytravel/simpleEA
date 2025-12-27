@@ -169,6 +169,14 @@ Planned modules are tracked in `ROADMAP.md`.
 
 ---
 
+## Optional: Local Web UI (Viewer + Module Runner)
+
+Browse all workflow runs, open dashboards/reports, and launch post-step modules from a single local page:
+
+```bash
+python scripts/web_app.py --open
+```
+
 ## Gate Conditions (Defaults)
 
 Thresholds live in `settings.py` (do not hardcode them elsewhere).

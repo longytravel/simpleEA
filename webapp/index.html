@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>simpleEA - Local Web UI</title>
+    <link rel="stylesheet" href="/webapp/app.css" />
+    <script src="/webapp/app.js" defer></script>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-title">simpleEA</div>
+        <div class="brand-subtitle">Local Web UI (offline)</div>
+      </div>
+      <div class="topbar-actions">
+        <button id="refreshBtn" class="btn">Refresh</button>
+        <a class="btn btn-secondary" href="/api/health" target="_blank" rel="noopener">API</a>
+      </div>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">Workflow Runs</div>
+          <input id="searchInput" class="input" placeholder="Search EA name…" />
+        </div>
+        <div id="statesList" class="states"></div>
+      </aside>
+
+      <main class="main">
+        <div id="stateHeader" class="card">
+          <div class="state-title" id="stateTitle">Select a run</div>
+          <div class="state-meta" id="stateMeta"></div>
+          <div class="kpis" id="stateKpis"></div>
+          <div class="links" id="stateLinks"></div>
+        </div>
+
+        <div class="grid">
+          <section class="card">
+            <div class="card-title">Steps</div>
+            <div id="stepsTable" class="scroll"></div>
+          </section>
+
+          <section class="card">
+            <div class="card-title">Post-Step Modules</div>
+            <div id="modulesTable" class="scroll"></div>
+          </section>
+        </div>
+
+        <section class="card">
+          <div class="card-title">Jobs</div>
+          <div class="muted">Runs post-step modules in the background; logs update live.</div>
+          <div id="jobsPanel" class="jobs"></div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
+
