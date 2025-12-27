@@ -169,9 +169,19 @@ Planned modules are tracked in `ROADMAP.md`.
 
 ---
 
-## Optional: Local Web UI (Viewer + Module Runner)
+## Optional: Core Workflow Runner (Automation)
 
-Browse all workflow runs, open dashboards/reports, and launch post-step modules from a single local page:
+Run Steps 1-11 end-to-end and write a standard `runs/workflow_*.json` state file:
+
+```bash
+python scripts/run_workflow.py --ea-path "path\\to\\EA_Name.mq5" --symbol EURUSD --timeframe H1
+```
+
+---
+
+## Optional: Local Web UI (Viewer + Runner)
+
+Browse workflow runs, select EAs from detected MT5 terminals, start workflows, and launch post-step modules from a single local page:
 
 ```bash
 python scripts/web_app.py --open

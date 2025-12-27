@@ -143,5 +143,7 @@ Constraints:
 
 Features:
 - Reads `runs/workflow_*.json` to show step statuses and post-step runs (`post_steps[]`).
+- Discovers MT5 terminals and lists available Expert Advisors (`.mq5`) from each terminal's `MQL5/Experts`.
+- Starts new core workflow runs via `scripts/run_workflow.py` and streams logs under Jobs.
 - Buttons trigger existing scripts (e.g. `scripts/run_walk_forward.py`) via subprocess and stream logs.
 - Links directly to generated offline HTML outputs under `runs/` (dashboards, post-step reports, backtest reports).

@@ -108,12 +108,13 @@ class WorkflowStateManager:
         self.state: Optional[WorkflowState] = None
         self.state_file: Optional[Path] = None
 
-    def create_workflow(self, ea_name: str, ea_path: str, symbol: str = "EURUSD") -> WorkflowState:
+    def create_workflow(self, ea_name: str, ea_path: str, symbol: str = "EURUSD", timeframe: str = "H1") -> WorkflowState:
         """Create a new workflow state."""
         self.state = WorkflowState(
             ea_name=ea_name,
             ea_path=ea_path,
-            symbol=symbol
+            symbol=symbol,
+            timeframe=timeframe,
         )
 
         # Create state file
@@ -248,7 +249,7 @@ class WorkflowStateManager:
         self._save()
         return True, f"Completed step: {step_name}"
 
-    def fail_step(self, step_name: str, error: str) -> tuple[bool, str]:
+    def fail_step(self, step_name: str, error: str, output: Optional[Dict[str, Any]] = None) -> tuple[bool, str]:
         """
         Mark a step as failed.
 
@@ -265,6 +266,8 @@ class WorkflowStateManager:
         step.status = StepStatus.FAILED
         step.completed_at = datetime.now().isoformat()
         step.error = error
+        if output is not None:
+            step.output = output
 
         self.state.updated_at = datetime.now().isoformat()
         self._save()

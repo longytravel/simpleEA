@@ -25,9 +25,19 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
+import psutil
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import MT5_DATA_PATH, PROJECT_ROOT, RUNS_DIR  # type: ignore
+from config import (
+    DEFAULT_SYMBOL,
+    DEFAULT_TIMEFRAME,
+    MT5_DATA_PATH,
+    MT5_EXPERTS_PATH,
+    MT5_TERMINAL,
+    PROJECT_ROOT,
+    RUNS_DIR,
+)  # type: ignore
 from workflow.post_step_modules import POST_STEP_MODULES
 
 
@@ -164,6 +174,195 @@ def _tail_text(path: Path, max_bytes: int = 8000) -> str:
         return ""
 
 
+def _terminal_bases() -> List[Path]:
+    bases: List[Path] = []
+    appdata = os.environ.get("APPDATA")
+    localappdata = os.environ.get("LOCALAPPDATA")
+    if appdata:
+        bases.append(Path(appdata) / "MetaQuotes" / "Terminal")
+    if localappdata:
+        bases.append(Path(localappdata) / "MetaQuotes" / "Terminal")
+    return [b for b in bases if b.exists()]
+
+
+def _read_origin_path(data_dir: Path) -> Optional[Path]:
+    origin = data_dir / "origin.txt"
+    if not origin.exists():
+        return None
+    try:
+        b = origin.read_bytes()
+        # Some terminals write origin.txt as UTF-16 (null bytes between chars).
+        if b"\x00" in b[:64]:
+            raw = b.decode("utf-16", errors="ignore").strip()
+        else:
+            raw = b.decode("utf-8", errors="ignore").strip()
+    except Exception:
+        return None
+    if not raw:
+        return None
+    return Path(raw)
+
+
+def _latest_mtime_under(path: Path, glob: str) -> Optional[float]:
+    if not path.exists():
+        return None
+    latest: Optional[float] = None
+    try:
+        for p in path.glob(glob):
+            try:
+                mt = p.stat().st_mtime
+            except OSError:
+                continue
+            if latest is None or mt > latest:
+                latest = mt
+    except Exception:
+        return None
+    return latest
+
+
+def _running_mt5_processes() -> Dict[Path, List[int]]:
+    """
+    Map MT5 install dirs -> list of PIDs.
+
+    We use the process executable directory as the install dir (origin.txt matches this).
+    """
+    by_install: Dict[Path, List[int]] = {}
+    for proc in psutil.process_iter(["pid", "name", "exe"]):
+        try:
+            name = (proc.info.get("name") or "").lower()
+            exe = proc.info.get("exe")
+            if not exe:
+                continue
+            exe_path = Path(exe)
+            if not exe_path.exists():
+                continue
+            if "terminal64" not in name and exe_path.name.lower() not in ("terminal64.exe", "terminal.exe"):
+                continue
+            install_dir = exe_path.parent.resolve()
+            by_install.setdefault(install_dir, []).append(int(proc.info["pid"]))
+        except Exception:
+            continue
+    return by_install
+
+
+def _discover_terminals() -> List[Dict[str, Any]]:
+    """
+    Discover terminal data folders (and try to mark which ones are currently open).
+
+    Returns entries with:
+      - id: terminal data folder name (hash)
+      - data_path: absolute path to terminal data folder
+      - experts_path: absolute path to MQL5/Experts
+      - origin_path: origin.txt install dir (best-effort)
+      - terminal_exe: guessed terminal64.exe path (best-effort)
+      - is_running: whether a matching terminal64.exe process is running (best-effort)
+      - pids: list of PIDs if running
+    """
+    running = _running_mt5_processes()
+    out: List[Dict[str, Any]] = []
+
+    seen: set[str] = set()
+    for base in _terminal_bases():
+        for data_dir in base.iterdir():
+            if not data_dir.is_dir():
+                continue
+            if data_dir.name.lower() in {"common", "community", "help"}:
+                continue
+            if data_dir.name in seen:
+                continue
+            seen.add(data_dir.name)
+
+            experts = data_dir / "MQL5" / "Experts"
+            if not experts.exists():
+                continue
+
+            origin = _read_origin_path(data_dir)
+            install_dir = origin.resolve() if origin else None
+
+            pids: List[int] = []
+            if install_dir and install_dir in running:
+                pids = running[install_dir]
+
+            latest_log = _latest_mtime_under(data_dir / "logs", "*.log")
+            if latest_log is None:
+                latest_log = _latest_mtime_under(data_dir / "Tester" / "logs", "*.log")
+
+            terminal_exe = None
+            if origin:
+                cand = origin / "terminal64.exe"
+                if cand.exists():
+                    terminal_exe = str(cand)
+                else:
+                    cand2 = origin / "terminal.exe"
+                    terminal_exe = str(cand2) if cand2.exists() else str(cand)
+
+            out.append(
+                {
+                    "id": data_dir.name,
+                    "data_path": str(data_dir),
+                    "experts_path": str(experts),
+                    "origin_path": str(origin) if origin else None,
+                    "terminal_exe": terminal_exe,
+                    "is_running": bool(pids),
+                    "pids": pids,
+                    "latest_log_mtime": latest_log,
+                    "is_default": data_dir.resolve() == MT5_DATA_PATH.resolve(),
+                }
+            )
+
+    out.sort(key=lambda d: (not bool(d.get("is_running")), not bool(d.get("is_default")), str(d.get("id"))))
+    return out
+
+
+def _resolve_terminal_by_id(terminal_id: str) -> Optional[Dict[str, Any]]:
+    tid = (terminal_id or "").strip()
+    if not tid:
+        return None
+    for t in _discover_terminals():
+        if t.get("id") == tid:
+            return t
+    return None
+
+
+def _list_eas_in_experts(experts_path: Path, *, max_files: int = 2000) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    if not experts_path.exists():
+        return out
+
+    count = 0
+    for p in experts_path.rglob("*.mq5"):
+        if not p.is_file():
+            continue
+        try:
+            rel = p.relative_to(experts_path).as_posix()
+        except Exception:
+            rel = p.name
+
+        try:
+            st = p.stat()
+            size = int(st.st_size)
+            mtime = float(st.st_mtime)
+        except OSError:
+            size = 0
+            mtime = 0.0
+
+        out.append(
+            {
+                "name": p.stem,
+                "rel_path": rel,
+                "abs_path": str(p),
+                "size_bytes": size,
+                "mtime": mtime,
+            }
+        )
+        count += 1
+        if count >= max_files:
+            break
+
+    out.sort(key=lambda d: (str(d.get("name") or "").lower(), str(d.get("rel_path") or "")))
+    return out
+
+
 @dataclass
 class Job:
     id: str
@@ -225,6 +424,40 @@ def _spawn_job(module_id: str, state_path: Path, extra_args: Optional[List[str]]
 
     with _JOBS_LOCK:
         _JOBS[job_id] = {"job": job, "proc": proc, "log_f": log_f, "log_path": log_path}
+
+    return job
+
+
+def _spawn_workflow_job(config: Dict[str, Any]) -> Job:
+    job_id = time.strftime("%Y%m%d_%H%M%S") + f"_{os.getpid()}_{int(time.time() * 1000) % 1000:03d}"
+
+    cfg_path = _jobs_dir() / f"{job_id}_workflow.json"
+    cfg_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+    cmd = [sys.executable, "scripts/run_workflow.py", "--config", str(cfg_path)]
+
+    log_path = _jobs_dir() / f"{job_id}_workflow.log"
+    log_f = open(log_path, "w", encoding="utf-8", errors="replace")
+    proc = subprocess.Popen(
+        cmd,
+        cwd=str(PROJECT_ROOT),
+        stdout=log_f,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+
+    job = Job(
+        id=job_id,
+        module_id="workflow",
+        state_path="",
+        command=[str(c) for c in cmd],
+        started_at=time.time(),
+        status="running",
+        log_rel=_safe_relative_to_root(log_path) or str(log_path),
+    )
+
+    with _JOBS_LOCK:
+        _JOBS[job_id] = {"job": job, "proc": proc, "log_f": log_f, "log_path": log_path, "cfg_path": cfg_path}
 
     return job
 
@@ -308,6 +541,29 @@ class _Handler(SimpleHTTPRequestHandler):
             ]
             return self._send_json({"modules": mods})
 
+        if parsed.path == "/api/terminals":
+            return self._send_json(
+                {
+                    "terminals": _discover_terminals(),
+                    "default": {
+                        "terminal_exe": str(MT5_TERMINAL),
+                        "data_path": str(MT5_DATA_PATH),
+                        "experts_path": str(MT5_EXPERTS_PATH),
+                    },
+                }
+            )
+
+        if parsed.path == "/api/eas":
+            qs = parse_qs(parsed.query or "")
+            terminal_id = str((qs.get("terminal_id") or [""])[0]).strip()
+            t = _resolve_terminal_by_id(terminal_id)
+            if not t:
+                return self._send_json({"error": "Unknown terminal_id"}, status=400)
+            experts = Path(str(t["experts_path"]))
+            return self._send_json(
+                {"terminal_id": terminal_id, "experts_path": str(experts), "eas": _list_eas_in_experts(experts)}
+            )
+
         if parsed.path == "/api/jobs":
             jobs = _poll_jobs()
             payload = []
@@ -336,7 +592,7 @@ class _Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
-        if parsed.path != "/api/run":
+        if parsed.path not in ("/api/run", "/api/workflow/run"):
             return self._send_json({"error": "Not found"}, status=404)
 
         try:
@@ -348,6 +604,45 @@ class _Handler(SimpleHTTPRequestHandler):
             payload = json.loads(raw.decode("utf-8") or "{}")
         except Exception:
             return self._send_json({"error": "Invalid JSON"}, status=400)
+
+        if parsed.path == "/api/workflow/run":
+            terminal_id = str(payload.get("terminal_id") or "").strip()
+            ea_rel = str(payload.get("ea_rel_path") or "").strip().replace("\\", "/")
+            symbol = str(payload.get("symbol") or DEFAULT_SYMBOL).strip()
+            timeframe = str(payload.get("timeframe") or DEFAULT_TIMEFRAME).strip()
+            options = payload.get("options") or {}
+
+            if not terminal_id or not ea_rel:
+                return self._send_json({"error": "terminal_id and ea_rel_path are required"}, status=400)
+            if not isinstance(options, dict):
+                return self._send_json({"error": "options must be an object"}, status=400)
+
+            t = _resolve_terminal_by_id(terminal_id)
+            if not t:
+                return self._send_json({"error": "Unknown terminal_id"}, status=400)
+            experts = Path(str(t["experts_path"]))
+            ea_path = (experts / ea_rel).resolve()
+            if not ea_path.exists() or ea_path.suffix.lower() != ".mq5":
+                return self._send_json({"error": f"EA not found: {ea_rel}"}, status=400)
+            try:
+                ea_path.relative_to(experts.resolve())
+            except Exception:
+                return self._send_json({"error": "Invalid ea_rel_path (outside Experts)"}, status=400)
+
+            cfg = {
+                "ea_path": str(ea_path),
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "options": options,
+                "source": {"terminal_id": terminal_id, "experts_path": str(experts), "ea_rel_path": ea_rel},
+            }
+
+            try:
+                job = _spawn_workflow_job(cfg)
+            except Exception as e:
+                return self._send_json({"error": str(e)}, status=500)
+
+            return self._send_json({"ok": True, "job": {"id": job.id, "status": job.status}})
 
         module_id = str(payload.get("module_id") or "").strip()
         state_raw = str(payload.get("state_path") or "").strip()
@@ -406,4 +701,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

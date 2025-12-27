@@ -15,6 +15,8 @@ const STEP_ORDER = [
 
 let allStates = [];
 let allModules = [];
+let allTerminals = [];
+let allEas = [];
 let selectedPath = null;
 let selectedState = null;
 let lastJobsById = {};
@@ -117,6 +119,57 @@ async function refreshStates() {
   const data = await fetchJson("/api/states?limit=200");
   allStates = data.states || [];
   renderStatesList();
+}
+
+function renderTerminalSelect() {
+  const sel = $("#terminalSelect");
+  if (!sel) return;
+  sel.innerHTML = "";
+  for (const t of allTerminals) {
+    const label = `${t.is_running ? "● " : ""}${t.id}${t.is_default ? " (default)" : ""}${
+      t.origin_path ? ` — ${t.origin_path}` : ""
+    }`;
+    const opt = el("option", { value: t.id, text: label }, []);
+    sel.appendChild(opt);
+  }
+}
+
+function renderEaSelect() {
+  const sel = $("#eaSelect");
+  if (!sel) return;
+  sel.innerHTML = "";
+
+  const q = String($("#eaSearchInput").value || "").trim().toLowerCase();
+  const filtered = (allEas || []).filter((e) => {
+    if (!q) return true;
+    return String(e.name || "").toLowerCase().includes(q) || String(e.rel_path || "").toLowerCase().includes(q);
+  });
+
+  for (const e of filtered) {
+    const opt = el("option", { value: e.rel_path, text: `${e.name} — ${e.rel_path}` }, []);
+    sel.appendChild(opt);
+  }
+}
+
+async function refreshTerminals() {
+  const data = await fetchJson("/api/terminals");
+  allTerminals = data.terminals || [];
+  renderTerminalSelect();
+
+  const sel = $("#terminalSelect");
+  if (sel && sel.value) {
+    await refreshEas(sel.value);
+  } else if (sel && allTerminals.length) {
+    sel.value = allTerminals[0].id;
+    await refreshEas(sel.value);
+  }
+}
+
+async function refreshEas(terminalId) {
+  if (!terminalId) return;
+  const data = await fetchJson(`/api/eas?terminal_id=${encodeURIComponent(terminalId)}`);
+  allEas = data.eas || [];
+  renderEaSelect();
 }
 
 async function refreshModules() {
@@ -401,10 +454,88 @@ function attachEvents() {
     await refreshStates();
     if (selectedPath) await selectState(selectedPath);
   });
+
+  const termSel = $("#terminalSelect");
+  if (termSel) {
+    termSel.addEventListener("change", async () => {
+      await refreshEas(termSel.value);
+    });
+  }
+
+  const eaSearch = $("#eaSearchInput");
+  if (eaSearch) {
+    eaSearch.addEventListener("input", renderEaSelect);
+  }
+
+  const optCheck = $("#optCheck");
+  const mcCheck = $("#mcCheck");
+  const reportCheck = $("#reportCheck");
+  function syncDeps() {
+    const optOn = optCheck && optCheck.checked;
+    if (mcCheck) {
+      mcCheck.disabled = !optOn;
+      if (!optOn) mcCheck.checked = false;
+    }
+    const mcOn = mcCheck && mcCheck.checked;
+    if (reportCheck) {
+      reportCheck.disabled = !(optOn && mcOn);
+      if (!(optOn && mcOn)) reportCheck.checked = false;
+    }
+  }
+  if (optCheck) optCheck.addEventListener("change", syncDeps);
+  if (mcCheck) mcCheck.addEventListener("change", syncDeps);
+  syncDeps();
+
+  const startBtn = $("#startWorkflowBtn");
+  if (startBtn) {
+    startBtn.addEventListener("click", async () => {
+      const terminalId = termSel ? termSel.value : "";
+      const eaRel = $("#eaSelect") ? $("#eaSelect").value : "";
+      const symbol = String($("#symbolInput").value || "EURUSD").trim();
+      const timeframe = String($("#timeframeInput").value || "H1").trim();
+
+      const opts = {
+        inject_ontester: $("#ontesterCheck") ? $("#ontesterCheck").checked : true,
+        inject_safety: $("#safetyCheck") ? $("#safetyCheck").checked : true,
+        run_optimization: $("#optCheck") ? $("#optCheck").checked : true,
+        run_monte_carlo: $("#mcCheck") ? $("#mcCheck").checked : true,
+        run_report: $("#reportCheck") ? $("#reportCheck").checked : true,
+      };
+
+      if (!terminalId || !eaRel) {
+        alert("Select a terminal and an EA first.");
+        return;
+      }
+
+      startBtn.disabled = true;
+      startBtn.textContent = "Starting…";
+      try {
+        await fetchJson("/api/workflow/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            terminal_id: terminalId,
+            ea_rel_path: eaRel,
+            symbol,
+            timeframe,
+            options: opts,
+          }),
+        });
+        await refreshJobs();
+        await refreshStates();
+      } catch (e) {
+        alert(String(e.message || e));
+      } finally {
+        startBtn.disabled = false;
+        startBtn.textContent = "Start workflow";
+      }
+    });
+  }
 }
 
 async function boot() {
   attachEvents();
+  await refreshTerminals();
   await refreshStates();
   await refreshModules();
   await refreshJobs();
@@ -417,4 +548,3 @@ boot().catch((e) => {
   console.error(e);
   $("#stateTitle").textContent = `Error: ${String(e.message || e)}`;
 });
-

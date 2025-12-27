@@ -30,16 +30,18 @@ class BacktestResult:
 class BacktestRunner:
     """Runs MT5 Strategy Tester backtests."""
 
-    def __init__(self, terminal_path: Optional[Path] = None, timeout: int = 300):
+    def __init__(self, terminal_path: Optional[Path] = None, timeout: int = 300, *, kill_existing: bool = False):
         """
         Initialize the backtest runner.
 
         Args:
             terminal_path: Path to terminal64.exe
             timeout: Maximum seconds to wait for backtest completion
+            kill_existing: If True, kill a running MT5 process for this terminal path before starting.
         """
         self.terminal = terminal_path or MT5_TERMINAL
         self.timeout = timeout
+        self.kill_existing = kill_existing
 
     def run(
         self,
@@ -103,8 +105,15 @@ class BacktestRunner:
 
         try:
             # Check if MT5 is already running
-            self._kill_mt5_if_running()
-            time.sleep(1)
+            if self.kill_existing:
+                self._kill_mt5_if_running()
+                time.sleep(1)
+            elif self._is_mt5_running():
+                return BacktestResult(
+                    success=False,
+                    error="MT5 terminal is already running for this installation (close it or use kill_existing=True)",
+                    duration_seconds=time.time() - start_time,
+                )
 
             # Run terminal with config
             cmd = [str(self.terminal), f'/config:{ini_path}']
@@ -202,13 +211,42 @@ class BacktestRunner:
             )
 
     def _kill_mt5_if_running(self):
-        """Kill any running MT5 terminal processes."""
-        for proc in psutil.process_iter(['name']):
+        """Kill running MT5 terminal processes that match this runner's terminal executable path."""
+        target = None
+        try:
+            target = Path(self.terminal).resolve()
+        except Exception:
+            target = None
+
+        for proc in psutil.process_iter(['name', 'exe']):
             try:
-                if proc.info['name'] and 'terminal64' in proc.info['name'].lower():
+                exe = proc.info.get('exe')
+                if not exe:
+                    continue
+                if target and Path(exe).resolve() == target:
                     proc.kill()
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
+
+    def _is_mt5_running(self) -> bool:
+        """Return True if a running MT5 process matches this runner's terminal executable path."""
+        try:
+            target = Path(self.terminal).resolve()
+        except Exception:
+            return False
+
+        for proc in psutil.process_iter(['exe']):
+            try:
+                exe = proc.info.get('exe')
+                if not exe:
+                    continue
+                if Path(exe).resolve() == target:
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+            except Exception:
+                continue
+        return False
 
     def _copy_report_assets(self, report_path: Path, run_dir: Path) -> Path:
         """

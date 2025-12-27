@@ -56,7 +56,7 @@ def _copy_outputs_to_runs(paths: list[Path]) -> list[str]:
     return copied
 
 
-def wait_for_optimization(ea_name: str, report_name: str, timeout: int, poll_interval: int = 30) -> dict:
+def wait_for_optimization(process: subprocess.Popen, ea_name: str, report_name: str, timeout: int, poll_interval: int = 30) -> dict:
     """
     Wait for optimization to complete.
 
@@ -129,19 +129,12 @@ def wait_for_optimization(ea_name: str, report_name: str, timeout: int, poll_int
                 "copied_to_runs": copied,
             }
 
-        # Check if MT5 is still running
-        result = subprocess.run(
-            ["tasklist", "/FI", "IMAGENAME eq terminal64.exe"],
-            capture_output=True,
-            text=True
-        )
-
-        if "terminal64.exe" not in result.stdout:
-            # MT5 closed - check for report one more time
+        # Check the process we launched (do not rely on global terminal64.exe presence;
+        # users may have other MT5 instances open).
+        if process.poll() is not None:
             time.sleep(5)
             elapsed = time.time() - start_time
 
-            # XML is authoritative - treat as success even if no HTML report was written.
             if _recent_mtime(xml_insample, start_time) and _recent_mtime(xml_forward, start_time):
                 copied = _copy_outputs_to_runs([xml_insample, xml_forward])
                 return {
@@ -165,7 +158,7 @@ def wait_for_optimization(ea_name: str, report_name: str, timeout: int, poll_int
             return {
                 "success": False,
                 "error": "MT5 closed without generating report",
-                "elapsed": int(elapsed)
+                "elapsed": int(elapsed),
             }
 
         print(f"Optimization running... {int(elapsed)}s elapsed", flush=True)
@@ -256,7 +249,7 @@ def run_optimization(ini_path: Path, timeout: int = 3600, wait: bool = True) -> 
 
         # Wait for completion
         print(f"Waiting for optimization (timeout: {timeout}s)...")
-        result = wait_for_optimization(ea_name, report_name, timeout)
+        result = wait_for_optimization(process, ea_name, report_name, timeout)
 
         if result["success"]:
             print(f"Optimization complete in {result['elapsed']}s")

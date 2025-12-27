@@ -172,7 +172,8 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 | `scripts/run_timeframes.py` | Optional timeframe sweep follow-up + offline HTML report | `python scripts/run_timeframes.py --state runs/workflow_EA_*.json --open` |
 | `scripts/generate_dashboard.py` | Interactive offline dashboard (sortable/filterable passes + compare page) | `python scripts/generate_dashboard.py --state runs/workflow_EA_*.json --passes 20` |
 | `scripts/generate_text_report.py` | Human-readable text report (ROI + quality + costs) | `python scripts/generate_text_report.py --state runs/workflow_EA_*.json` |
-| `scripts/web_app.py` | Local web UI (offline) to browse workflow runs + launch post-step modules | `python scripts/web_app.py --open` |
+| `scripts/run_workflow.py` | Run core workflow Steps 1-11 with state tracking (used by web UI) | `python scripts/run_workflow.py --ea-path "EA.mq5"` |
+| `scripts/web_app.py` | Local web UI (offline) to browse runs, select EAs from detected MT5 terminals, start workflows, and launch post-step modules | `python scripts/web_app.py --open` |
 | `parser/report.py` | Parse HTML report | Used internally |
 | `parser/trade_extractor.py` | Extract trades | Used by Monte Carlo |
 

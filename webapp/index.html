@@ -21,6 +21,46 @@
 
     <div class="layout">
       <aside class="sidebar">
+        <div class="card">
+          <div class="card-title">New Workflow Run</div>
+          <div class="muted">Select an EA from any detected MT5 terminal.</div>
+
+          <div style="height:10px"></div>
+
+          <div class="field">
+            <div class="field-label">MT5 Terminal</div>
+            <select id="terminalSelect" class="select"></select>
+          </div>
+
+          <div class="field">
+            <div class="field-label">Expert Advisor (.mq5)</div>
+            <input id="eaSearchInput" class="input" placeholder="Filter EAs…" />
+            <select id="eaSelect" class="select" size="8"></select>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <div class="field-label">Symbol</div>
+              <input id="symbolInput" class="input" value="EURUSD" />
+            </div>
+            <div class="field">
+              <div class="field-label">Timeframe</div>
+              <input id="timeframeInput" class="input" value="H1" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="check"><input id="optCheck" type="checkbox" checked /> Run optimization</label>
+            <label class="check"><input id="mcCheck" type="checkbox" checked /> Run Monte Carlo</label>
+            <label class="check"><input id="reportCheck" type="checkbox" checked /> Generate dashboard + text report</label>
+            <div style="height:8px"></div>
+            <label class="check"><input id="ontesterCheck" type="checkbox" checked /> Inject `OnTester()` (criterion 6)</label>
+            <label class="check"><input id="safetyCheck" type="checkbox" checked /> Inject safety guards</label>
+          </div>
+
+          <button id="startWorkflowBtn" class="btn">Start workflow</button>
+        </div>
+
         <div class="sidebar-header">
           <div class="sidebar-title">Workflow Runs</div>
           <input id="searchInput" class="input" placeholder="Search EA name…" />
@@ -57,4 +97,3 @@
     </div>
   </body>
 </html>
-
