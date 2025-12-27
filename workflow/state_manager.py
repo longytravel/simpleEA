@@ -79,6 +79,7 @@ class WorkflowState:
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
     current_step: str = "1_load"
     steps: Dict[str, StepState] = field(default_factory=dict)
+    post_steps: List[Dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self):
         # Initialize all steps if not provided
@@ -148,7 +149,8 @@ class WorkflowStateManager:
             created_at=data.get('created_at', ''),
             updated_at=data.get('updated_at', ''),
             current_step=data.get('current_step', '1_load'),
-            steps=steps
+            steps=steps,
+            post_steps=data.get('post_steps', []) or [],
         )
 
         return self.state
@@ -278,6 +280,7 @@ class WorkflowStateManager:
             "ea_name": self.state.ea_name,
             "symbol": self.state.symbol,
             "current_step": self.state.current_step,
+            "post_steps_count": len(self.state.post_steps or []),
             "steps": {
                 name: {
                     "status": step.status.value,
@@ -326,6 +329,7 @@ class WorkflowStateManager:
             "created_at": self.state.created_at,
             "updated_at": self.state.updated_at,
             "current_step": self.state.current_step,
+            "post_steps": self.state.post_steps or [],
             "steps": {
                 name: {
                     "status": step.status.value,

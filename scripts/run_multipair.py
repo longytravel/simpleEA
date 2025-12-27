@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import BACKTEST_FROM, BACKTEST_TO, DEFAULT_SYMBOL, DEFAULT_TIMEFRAME, RUNS_DIR
 from parser.trade_extractor import extract_trades
 from tester.multipair import MultiPairTester, load_params
+from workflow.post_steps import complete_post_step, fail_post_step, start_post_step
 
 
 def _find_latest_workflow_state(ea_name: str) -> Optional[Path]:
@@ -915,8 +916,18 @@ def main() -> None:
     out_dir = Path(args.out) if args.out else (RUNS_DIR / "multipair" / f"{ea_name}_{ts}")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    tester = MultiPairTester(pairs=args.pairs, timeout_per_pair=int(args.timeout), run_dir=out_dir / "backtests", inputs=inputs)
-    res = tester.test(ea_name=ea_name, primary_pair=symbol, timeframe=timeframe, from_date=from_date, to_date=to_date)
+    post_id = start_post_step(
+        state_path,
+        "multipair",
+        meta={"out_dir": str(out_dir), "pairs": args.pairs or [], "timeframe": timeframe, "from_date": from_date, "to_date": to_date},
+    )
+
+    try:
+        tester = MultiPairTester(pairs=args.pairs, timeout_per_pair=int(args.timeout), run_dir=out_dir / "backtests", inputs=inputs)
+        res = tester.test(ea_name=ea_name, primary_pair=symbol, timeframe=timeframe, from_date=from_date, to_date=to_date)
+    except Exception as e:
+        fail_post_step(state_path, post_id, error=str(e), output={"out_dir": str(out_dir)})
+        raise
 
     # Build report-friendly dict with relative links
     results: Dict[str, Any] = {}
@@ -949,6 +960,12 @@ def main() -> None:
     (out_dir / "data.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
     index_path = out_dir / "index.html"
     index_path.write_text(_render_html(data), encoding="utf-8")
+
+    complete_post_step(
+        state_path,
+        post_id,
+        output={"out_dir": str(out_dir), "index": str(index_path), "data_json": str((out_dir / "data.json"))},
+    )
 
     if args.open:
         import subprocess

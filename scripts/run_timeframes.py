@@ -29,6 +29,7 @@ from parser.report import ReportParser
 from parser.trade_extractor import extract_trades
 from tester.backtest import BacktestRunner
 from tester.multipair import load_params
+from workflow.post_steps import complete_post_step, fail_post_step, start_post_step
 
 
 def _find_latest_workflow_state(ea_name: str) -> Optional[Path]:
@@ -433,51 +434,61 @@ def main() -> None:
     out_dir = Path(args.out) if args.out else (RUNS_DIR / "timeframes" / f"{ea_name}_{ts}")
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    post_id = start_post_step(
+        state_path,
+        "timeframes",
+        meta={"out_dir": str(out_dir), "symbol": symbol, "timeframes": args.timeframes, "from_date": from_date, "to_date": to_date},
+    )
+
     runner = BacktestRunner(timeout=int(args.timeout))
     rp = ReportParser()
     start = time.time()
 
     results: Dict[str, Any] = {}
-    for tf in args.timeframes:
-        tf_dir = out_dir / "backtests" / tf
-        tf_dir.mkdir(parents=True, exist_ok=True)
-        print(f"Testing {ea_name} on {symbol} {tf}...")
+    try:
+        for tf in args.timeframes:
+            tf_dir = out_dir / "backtests" / tf
+            tf_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Testing {ea_name} on {symbol} {tf}...")
 
-        bt = runner.run(
-            ea_name=ea_name,
-            symbol=symbol,
-            timeframe=tf,
-            from_date=from_date,
-            to_date=to_date,
-            run_dir=tf_dir,
-            inputs=inputs,
-        )
+            bt = runner.run(
+                ea_name=ea_name,
+                symbol=symbol,
+                timeframe=tf,
+                from_date=from_date,
+                to_date=to_date,
+                run_dir=tf_dir,
+                inputs=inputs,
+            )
 
-        if not bt.success or not bt.report_path:
-            results[tf] = {"success": False, "error": bt.error or "Backtest failed"}
-            continue
+            if not bt.success or not bt.report_path:
+                results[tf] = {"success": False, "error": bt.error or "Backtest failed"}
+                continue
 
-        metrics = rp.parse(bt.report_path)
-        extraction = extract_trades(str(bt.report_path))
+            metrics = rp.parse(bt.report_path)
+            extraction = extract_trades(str(bt.report_path))
 
-        total_commission = extraction.total_commission if extraction.success else None
-        total_swap = extraction.total_swap if extraction.success else None
+            total_commission = extraction.total_commission if extraction.success else None
+            total_swap = extraction.total_swap if extraction.success else None
 
-        report_rel = bt.report_path.relative_to(out_dir).as_posix()
-        results[tf] = {
-            "success": True,
-            "profit_factor": getattr(metrics, "profit_factor", 0.0) if metrics else 0.0,
-            "total_profit": getattr(metrics, "total_net_profit", 0.0) if metrics else 0.0,
-            "roi_pct": getattr(metrics, "roi_pct", 0.0) if metrics else 0.0,
-            "max_drawdown_pct": getattr(metrics, "max_drawdown_pct", 0.0) if metrics else 0.0,
-            "total_trades": getattr(metrics, "total_trades", 0) if metrics else 0,
-            "history_quality": getattr(metrics, "history_quality", 0.0) if metrics else 0.0,
-            "bars": getattr(metrics, "bars", 0) if metrics else 0,
-            "ticks": getattr(metrics, "ticks", 0) if metrics else 0,
-            "total_commission": total_commission,
-            "total_swap": total_swap,
-            "report_rel": report_rel,
-        }
+            report_rel = bt.report_path.relative_to(out_dir).as_posix()
+            results[tf] = {
+                "success": True,
+                "profit_factor": getattr(metrics, "profit_factor", 0.0) if metrics else 0.0,
+                "total_profit": getattr(metrics, "total_net_profit", 0.0) if metrics else 0.0,
+                "roi_pct": getattr(metrics, "roi_pct", 0.0) if metrics else 0.0,
+                "max_drawdown_pct": getattr(metrics, "max_drawdown_pct", 0.0) if metrics else 0.0,
+                "total_trades": getattr(metrics, "total_trades", 0) if metrics else 0,
+                "history_quality": getattr(metrics, "history_quality", 0.0) if metrics else 0.0,
+                "bars": getattr(metrics, "bars", 0) if metrics else 0,
+                "ticks": getattr(metrics, "ticks", 0) if metrics else 0,
+                "total_commission": total_commission,
+                "total_swap": total_swap,
+                "report_rel": report_rel,
+            }
+    except Exception as e:
+        fail_post_step(state_path, post_id, error=str(e), output={"out_dir": str(out_dir)})
+        raise
 
     data = {
         "ea_name": ea_name,
@@ -493,6 +504,12 @@ def main() -> None:
     (out_dir / "data.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
     index_path = out_dir / "index.html"
     index_path.write_text(_render_html(data), encoding="utf-8")
+
+    complete_post_step(
+        state_path,
+        post_id,
+        output={"out_dir": str(out_dir), "index": str(index_path), "data_json": str((out_dir / "data.json"))},
+    )
 
     if args.open:
         import subprocess
@@ -518,4 +535,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

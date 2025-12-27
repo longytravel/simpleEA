@@ -77,12 +77,12 @@ python optimizer/param_extractor.py "path/to/EA.mq5"
 python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 
 # Create WIDE params for validation (use larger expansion)
-# Note: param_extractor.py auto-generates ±50% ranges
+# Note: param_extractor.py auto-generates +/-50% ranges
 ```
 
 **Range generation rules (in param_extractor.py):**
-- Periods: ±50%, step = default/4
-- Multipliers: ±50%, step = 0.25
+- Periods: +/-50%, step = default/4
+- Multipliers: +/-50%, step = 0.25
 - Skip: MagicNumber, LotSize, RiskPercent, Slippage
 
 ---
@@ -121,7 +121,14 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 
 ---
 
-### 2. strategy-improver
+### 2. post-step-advisor
+**Location:** `.claude/agents/post-step-advisor.md`
+**Purpose:** Show optional post-step modules + recommendations (prevents "LLM forgetting")
+**When to use:** After Step 11, to decide what confidence boosters to run next
+
+---
+
+### 3. strategy-improver
 **Location:** `.claude/agents/strategy-improver.md`
 **Purpose:** Suggest improvements to EA logic
 **When to use:** After stress test, to improve failing EAs
@@ -133,7 +140,7 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 ### Compilation
 | Script | Purpose | Example |
 |--------|---------|---------|
-| `scripts/compile_ea.py` | Compile MQ5 → EX5 | `python scripts/compile_ea.py "EA.mq5"` |
+| `scripts/compile_ea.py` | Compile MQ5 -> EX5 | `python scripts/compile_ea.py "EA.mq5"` |
 
 ### Tester / Criterion
 | Script | Purpose | Example |
@@ -158,6 +165,8 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 | Script | Purpose | Example |
 |--------|---------|---------|
 | `scripts/run_backtest.py` | Run backtest | `python scripts/run_backtest.py "EA" --symbol EURUSD` |
+| `scripts/post_step_menu.py` | Post-step menu/advisor (shows optional modules + recommendations; reads `post_steps[]` from state) | `python scripts/post_step_menu.py --state runs/workflow_EA_*.json` |
+| `scripts/run_execution_stress.py` | Optional execution stress suite (offline spread/slippage/commission sensitivity) | `python scripts/run_execution_stress.py --state runs/workflow_EA_*.json --open` |
 | `scripts/run_multipair.py` | Optional multi-pair follow-up + offline HTML report (includes correlation/drawdown overlap, currency exposure, portfolio suggestions) | `python scripts/run_multipair.py --state runs/workflow_EA_*.json --open` |
 | `scripts/run_timeframes.py` | Optional timeframe sweep follow-up + offline HTML report | `python scripts/run_timeframes.py --state runs/workflow_EA_*.json --open` |
 | `scripts/generate_dashboard.py` | Interactive offline dashboard (sortable/filterable passes + compare page) | `python scripts/generate_dashboard.py --state runs/workflow_EA_*.json --passes 20` |
@@ -184,15 +193,25 @@ python optimizer/ini_builder.py "path/to/EA.mq5" --cloud on --output runs/
 
 ---
 
-## Workflow Steps → Tools Mapping
+## Workflow Internals
+
+| File | Purpose |
+|------|---------|
+| `workflow/state_manager.py` | Enforces step dependencies and persists `runs/workflow_*.json` |
+| `workflow/post_steps.py` | Records optional post-step module runs into `post_steps[]` in the state file |
+| `workflow/post_step_modules.py` | Catalog of post-step modules (prevents "LLM forgetting") |
+
+---
+
+## Workflow Steps -> Tools Mapping
 
 | Step | What Happens | Tools/Scripts to Use |
 |------|--------------|---------------------|
 | **1. Load EA** | Find .mq5 file | Check `config.MT5_EXPERTS_PATH` |
 | **1B. Inject OnTester** | Profit-first custom optimization scoring | `scripts/inject_ontester.py` (creates `*.mq5.ontester.bak` once) |
 | **1C. Inject Safety** | Add spread/rollover live guards (optional but recommended) | `scripts/inject_safety.py` (creates `*.mq5.safety.bak` once) |
-| **2. Compile** | MQ5 → EX5 | `scripts/compile_ea.py` |
-| **2B. Fix Errors** | If compile fails | `mql5-fixer` skill → `mql5-lookup` (max 5 attempts) |
+| **2. Compile** | MQ5 -> EX5 | `scripts/compile_ea.py` |
+| **2B. Fix Errors** | If compile fails | `mql5-fixer` skill -> `mql5-lookup` (max 5 attempts) |
 | **3. Extract Params** | Get input params | `optimizer/param_extractor.py` |
 | **4. Create Wide Params** | Intelligent param analysis | `optimizer/param_intelligence.py "EA.mq5" --mode both` |
 | **5. Validate Trades** | Simple backtest, wide params | `scripts/run_backtest.py "EA" --params runs/{EA}_wide_params.json` |
@@ -236,17 +255,20 @@ use_opus_for_complex: True  # Use Opus agent for hard errors
 MT5 Terminal Data:
 C:\Users\User\AppData\Roaming\MetaQuotes\Terminal\A42909ABCDDDD04324904B57BA9776B8\
 
-├── MQL5\Experts\           # EA source files (.mq5, .ex5)
-├── Tester\                 # Backtest results
-│   ├── reports\            # HTML reports
-│   └── *.xml               # Optimization results
+-- MQL5\Experts\           # EA source files (.mq5, .ex5)
+-- Tester\                 # Backtest results
+   -- reports\             # HTML reports
+   -- *.xml                # Optimization results
 
 Project:
 C:\Users\User\Projects\simpleEA\
 
-├── runs\                   # Output directory for INI files, results
-├── runs\dashboards\         # Offline HTML dashboards (index.html)
-├── reference\cache\        # Pre-cached MQL5 documentation (48 files)
+-- runs\                   # Output directory for state + outputs
+-- runs\dashboards\         # Offline HTML dashboards (index.html)
+-- runs\multipair\           # Offline multi-pair reports (index.html)
+-- runs\timeframes\          # Offline timeframe sweep reports (index.html)
+-- runs\stress\              # Offline execution stress reports (index.html)
+-- reference\cache\        # Pre-cached MQL5 documentation (48 files)
 ```
 
 ---
@@ -263,4 +285,4 @@ C:\Users\User\Projects\simpleEA\
 
 ---
 
-*Last updated: 2025-12-26*
+*Last updated: 2025-12-27*

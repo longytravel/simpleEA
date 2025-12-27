@@ -8,6 +8,12 @@ from .state_manager import (
     WORKFLOW_STEPS,
     STEP_DEPENDENCIES
 )
+from .post_steps import (
+    PostStepRun,
+    start_post_step,
+    complete_post_step,
+    fail_post_step,
+)
 
 __all__ = [
     'WorkflowStateManager',
@@ -15,5 +21,9 @@ __all__ = [
     'StepState',
     'StepStatus',
     'WORKFLOW_STEPS',
-    'STEP_DEPENDENCIES'
+    'STEP_DEPENDENCIES',
+    'PostStepRun',
+    'start_post_step',
+    'complete_post_step',
+    'fail_post_step',
 ]

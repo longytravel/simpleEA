@@ -25,16 +25,19 @@ python scripts/run_optimization.py "EA" --ini X          # Optimize
 python optimizer/result_parser.py "EA"                   # Find robust params
 python tester/montecarlo.py "report.htm"                 # Monte Carlo
 python scripts/generate_dashboard.py --ea "EA" --passes 20  # Dashboard (runs/dashboards/*/index.html)
+python scripts/post_step_menu.py --state runs/workflow_EA_*.json  # Post-step menu + recommendations
+python scripts/run_execution_stress.py --state runs/workflow_EA_*.json --open  # Execution stress suite
 ```
 
 ## Key Directories
 
 ```
 .claude/
-├── agents/stress-tester.md    # Main workflow agent
-├── skills/mql5-fixer/         # Fix compilation errors
-├── skills/mql5-lookup/        # Reference documentation
-└── skills/parameter-optimizer/ # Parameter extraction
+-- agents/stress-tester.md          # Main workflow agent
+-- agents/post-step-advisor.md      # Post-step menu + recommendations
+-- skills/mql5-fixer/               # Fix compilation errors
+-- skills/mql5-lookup/              # Reference documentation
+-- skills/parameter-optimizer/      # Parameter extraction
 
 scripts/                        # CLI tools
 optimizer/                      # Param extraction, INI building, result parsing
